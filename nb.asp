@@ -1,104 +1,201 @@
-<style>
+
+<!-- 
+Nguyen Duc Hoang (Mr)
+Youtube channel: https://www.youtube.com/c/nguyenduchoang
+Programming tutorial channel 
+-->
+<!DOCTYPE html>
+<html>
+<%
+@codepage=65001
+%>
+<%
+
+set conn=Server.CreateObject("ADODB.Connection")
+conn.Provider="Microsoft.Jet.OLEDB.4.0"
+conn.Open "D:/ASP/testsite/tai_lieu_db.mdb"
+table = Request.QueryString("table")
+
+
+groupid=Request.QueryString("groupid")
+
+Keyword = Trim(Request.QueryString("Keyword"))
+
+
+
+set rs=Server.CreateObject("ADODB.recordset")
+'sql="SELECT * from  "&table
+' column="name"
+' if( table= "tai_lieu2") then
+	' column="ten"
+' end if
+'sql="SELECT * FROM "&table &" WHERE name LIKE '%" & Replace(Keyword, "'", "''") & "%' "
+
+sql="SELECT * FROM tai_lieu1 ORDER BY dem DESC"
+Response.Write(sql)
+rs.CursorLocation = 3 ' adUseClient
+rs.Open sql, conn
+rs.PageSize = 8
+nPageCount = rs.PageCount
+nPage = CLng(Request.QueryString("page"))
+If nPage < 1 Or nPage > nPageCount Then
+	 nPage = 1
+End If
+%>
+<!--#include file="navit.asp"-->
+<body>
+<!--#include file="nb.asp"-->
+
+<!-- Carousel -->
+
+<!-- jumbotron -->
+
+
+
+
+
+
+
+<!--Carousel Wrapper-->
+<div id="multi-item-example" class="carousel slide carousel-multi-item" data-ride="carousel">
+
+  <!--Controls-->
+  <div class="controls-top">
+    <a class="btn-floating" href="#multi-item-example" data-slide="prev"><i class="fas fa-chevron-left"></i></a>
+    <a class="btn-floating" href="#multi-item-example" data-slide="next"><i
+        class="fas fa-chevron-right"></i></a>
+  </div>
+  <!--/.Controls-->
+
+  <!--Indicators-->
+  <ol class="carousel-indicators">
+    <li data-target="#multi-item-example" data-slide-to="0" class="active"></li>
+    <li data-target="#multi-item-example" data-slide-to="1"></li>
+    <li data-target="#multi-item-example" data-slide-to="2"></li>
+  </ol>
+  <!--/.Indicators-->
+
+  <!--Slides-->
+			<div class="carousel-inner" role="listbox">
+							<%
+If rs.RecordCount > 0 then
+  rs.AbsolutePage = nPage
+  Do While Not ( rs.Eof Or RS.AbsolutePage <> nPage )
+  if( rs.AbsolutePosition < 4) then
+
+	%>
+				<div class="row text-center">
+
+    <!--First slide-->
+							
+
+								<div class="carousel-item active">
+
+									  <div class="col-sm-4">
+										<div class="card sm-3">
+										  <img class="card-img-top"
+											src="https://mdbootstrap.com/img/Photos/Horizontal/Nature/4-col/img%20(34).jpg"
+											alt="Card image cap">
+										  <div class="card-body">
+											<h4 class="card-title"><%Response.Write(rs.Fields(1).Value)%></h4>
+											<p class="card-text"><%Response.Write(rs.Fields(2).Value)%></p>
+											<a class="btn btn-primary">Button</a>
+										  </div>
+										</div>
+									  </div>
+								</div>
+
+							
+    <!--/.First slide-->
+ <%
+							 else
+							 %>
+				 
+    <!--Second slide-->
+							<div class="carousel-item active">
+
+									  <div class="col-sm-4">
+										<div class="card sm-3">
+										  <img class="card-img-top"
+											src="https://mdbootstrap.com/img/Photos/Horizontal/Nature/4-col/img%20(34).jpg"
+											alt="Card image cap">
+										  <div class="card-body">
+											<h4 class="card-title"><%Response.Write(rs.Fields(1).Value)%></h4>
+											<p class="card-text"><%Response.Write(rs.Fields(2).Value)%></p>
+											<a class="btn btn-primary">Button</a>
+										  </div>
+										</div>
+									  </div>
+								</div>
+    <!--/.Second slide-->
+
+				</div>
+    <!--/.Third slide-->
+			</div>
+			<%
+								 end if
+								 
+										rs.MoveNext
+										Loop
+									  %>
+									  
+
+										<%
+									rs.Close
+
+								end if	
+									  %>
+  </div>
+  <!--/.Slides-->
+
+
+<!--/.Carousel Wrapper-->
+	
+
+
+<script>
 /*
 Nguyen Duc Hoang (Mr)
 Youtube channel: https://www.youtube.com/c/nguyenduchoang
-Programming tutorial channel: React Native, Swift, Nodejs, Angular
+Programming tutorial channel
 */
-@import url('https://fonts.googleapis.com/css?family=Raleway');
-html, body {
-	width: 100%;
-	height: 100%;
-	font-family: 'Raleway';
-	font-size: 16px;	
-	font-weight: bold;
+function isEmail(inputEmail) {
+    var regex = /^([a-zA-Z0-9_.+-])+\@(([a-zA-Z0-9-])+\.)+([a-zA-Z0-9]{2,4})+$/;
+	return regex.test(inputEmail);
 }
-.bg {
-	background: url('../images/background.jpg') no-repeat;
-	background-size: cover;
-	width: 100%;
-	height: 100%;
+function validatePassword(inputPassword) {
+	return inputPassword.length > 4;
 }
-.row-container {
-	border: 1px solid #fff;
-	border-radius: 20px;
-	margin-top: 20vh; /* vh= Viewport's height */
-	padding: 30px;
-	-webkit-box-shadow: 0px 1px 22px 5px rgba(0,0,0,0.75);
-	-moz-box-shadow: 0px 1px 22px 5px rgba(0,0,0,0.75);
-	box-shadow: 0px 1px 22px 5px rgba(0,0,0,0.75);
-}
-label, .form-check-label, h1 {
-	color: white;	
-	text-shadow: 2px 2px 10px #000;
-}
-.emailError, .passwordError {
-	color: red;
-	background-color: blanchedalmond;
-	padding-left: 10px;
-	border-radius: 4px;
-	margin-top: 1px;
-}
-</style>
 
-<!-- Navigation -->
-<nav class="navbar navbar-expand-md navbar-light bg-light sticky-top">
-	<div class="container-fluid">
-		<a class="navbar-branch" href="#">
-			<img src="./images/logo.png" height="50">
-		</a>
-		<button class="navbar-toggler" type="button" data-toggle="collapse" 
-			data-target="#navbarResponsive">
-			<span class="navbar-toggler-icon"></span>
-		</button>
-		<div class="collapse navbar-collapse" id="navbarResponsive">
-			<ul class="navbar-nav ml-auto">
-				<li class="nav-item">
-					<a class="nav-link active" href="./item1.asp?table=tai_lieu3">BAT</a>
-				</li>
-				<li class="nav-item">
-					<a class="nav-link" href="./index.asp">Home</a>
-				</li>
-				
-			</ul>
-			
-		</div>
-		<!-- Search form -->
-<FORM ACTION="SEARCH.asp" METHOD="GET">
-Item Name: <INPUT TYPE="text" NAME="Keyword"> <INPUT TYPE="submit" VALUE=" Find ">
-<input type="hidden" id="table" name="table" value="tai_lieu1">
-</FORM>
-
-		<div class="dropdown show">
-  <a class="btn btn-secondary dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-    Dropdown link
-  </a>
-
-  <div class="dropdown-menu" aria-labelledby="dropdownMenuLink">
-    <a class="dropdown-item" href="./SEARCH.asp?table=tai_lieu1">NUT1</a>
-    <a class="dropdown-item" href="./SEARCH.asp?table=tai_lieu2">NUT2</a>
-	<a class="dropdown-item" href="./SEARCH.asp?link=link4&table=tai_lieu1 tai_lieu2">NUT3</a>
-	<a class="dropdown-item" href="./SEARCH.asp?desc=dd&table=tai_lieu1">NUT4</a>
-    <a class="dropdown-item" href="#">Something else here</a>
-  </div>
-	</div>
-		<!-- <div class="dropdown show"> -->
-  <!-- <a id="thang_bo" class="btn btn-secondary dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"> -->
-    <!-- Loại tài liệu -->
-  <!-- </a> -->
-
-  <!-- <div id="demolist" class="dropdown-menu" aria-labelledby="loại tài liệu"> -->
-    <!-- <a class="dropdown-item" value="tai_lieu1" href="#">tài liệu 1</a> -->
-    <!-- <a class="dropdown-item" value="tai_lieu2"  href="#">tài liệu 2</a> -->
-  <!-- </div> -->
-	<!-- </div> -->
-	<script>
-  $(document).ready(function () {
-    $('#demolist a').on('click', function () {
-       var value= ($(this).attr('value'));
-	  var txt= ($(this).text());
-		$("#table").val(value);
-		$('#thang_bo').text(txt);
+$(document).ready(function(){
+    $('#email').change(function(){
+        var email = $(this).val().trim();
+        // alert(`email = ${JSON.stringify(email)}`)
+        if(!isEmail(email)) {
+            //Error ?
+            $(".emailError").html("Email is not valid format");
+        } else {
+            $(".emailError").html("");
+        }
     });
-  });
+    $('#password').change(function(){
+        var password = $(this).val();	
+        if(!validatePassword(password)) {
+			$(".passwordError").html("Password must be at least 5 characters");
+		} else {
+			$(".passwordError").html("");
+		}
+    });
+});
 </script>
-</nav>
+</body>
+</html>	
+
+
+
+
+
+
+
+
+
