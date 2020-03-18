@@ -105,7 +105,19 @@ else
  If nPage < 1 Or nPage > nPageCount Then
 	nPage = 1
 End If
-
+'đầu tiên cần biến tất cả ký tự linh tinh( dấu cah...) thành dấu + 
+Keyword= Replace(Keyword, " ", "+") 
+Keyword= Replace(Keyword, "*", "+") 
+Keyword= Replace(Keyword, ",", "+") 
+sql="SELECT * FROM tai_lieu1 WHERE "
+searchquery = split(Keyword,"+")
+	for each part in searchquery
+		sql = sql &  "name LIKE '%"& part &"%' or "
+	next
+'xóa cái or ở cuối đi	
+sql= Left(sql, Len(sql) - 3)
+sql = sql & " ORDER BY dem DESC"
+Response.Write(sql)
 %>
 
 <div class="container  text-white "style="
