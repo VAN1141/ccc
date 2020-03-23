@@ -1,0 +1,244 @@
+
+@import url('../fonts/');
+
+html, body {
+	width: 100%;
+	height: 100%;
+	font-family: 'Gamja Flower';
+	font-size: 20px;
+	color: #222;
+}
+#wrapper{width:1500px;height:1000px;background-color:#9dc0e4;margin-left: 300px;}
+#top1{width:1500px;height:90px;background-color:yellow;margin-top:0px}
+#left{width:100px;height:600;background-color:#fff;float=left}
+#content{width:400px;height:600;background-color:yellow}
+#right{width:1500px;height:50px;background-color:#fff}
+#wrapper1{width:80px;height:1500px;background-color:blue;margin-left: 0 ;float=left}
+#logo-cover-custom
+{background-color: #17a2b8}
+.card-custom
+{
+margin:auto
+}
+.search-form-custom
+{
+	margin-top:80px
+}	
+#logo-custom
+{
+
+	background-color: #0b396b
+}
+.font-color-custom
+{
+color: #fff
+}
+h2{
+	color:white;
+	 text-align: center;
+}
+font-color-custom
+{
+	color:white;
+	text-align: center;
+}
+#cover {
+   color:white;
+    text-align: center;
+    align-items: center;
+    display: block;
+	padding:20px;
+	background-color:#133b5a
+}
+.page-custom
+{
+padding-left: 550px
+}
+
+.navi-custom
+{
+background-color:#dbeef6}
+.navbar-custom {
+	background-color: #dbeef6
+}
+		  margin-top: 100px;
+  margin-bottom: 100px;
+  margin-right: 150px;
+  margin-left: 80px;
+.table-custom
+{
+	background-color:#dada16;
+height:100px}
+/* Create three equal columns that floats next to each other */
+#column1 {
+	background-color:yellow
+	
+  float: left;
+  width: 33.33%;
+  padding: 10px;
+  height: 300px; /* Should be removed. Only for demonstration */
+}
+#column2 {
+	background-color:red
+	
+  float: left;
+  width: 33.33%;
+  padding: 10px;
+  height: 300px; /* Should be removed. Only for demonstration */
+}
+#column3 {
+	background-color:green
+	
+  float: left;
+  width: 33.33%;
+  padding: 10px;
+  height: 300px; /* Should be removed. Only for demonstration */
+}
+
+/* Clear floats after the columns */
+
+.wrapper.top1.navbar
+{
+	background-color:#2d5b80 !important
+}
+.carousel-caption {
+	position: absolute;
+	bottom:200px;
+}
+.navbar .nav-link {
+    color: #63686df2 
+}
+.navbar .nav-link:hover {
+color: #007bff !important}
+.navbar li a {
+    color: #495057;
+	
+}
+.navbar li a:hover {
+	color: #ffff;
+ 
+ } 
+
+.dropdown-hover:hover{
+	background: #007bff;;
+	color: #fff!important
+
+}
+.jumbotron {
+	background-color: #ffffff!important
+}
+.dropdown-submenu {
+  position: relative;
+  
+}
+
+.dropdown-submenu>a:after {
+  content: "\f0da";
+  float: left;
+  border: none;
+  font-family: 'FontAwesome';
+}
+
+.dropdown-submenu>.dropdown-menu {
+  top: 0px;
+  left: 100%;
+  margin-top: 0px;
+  margin-left: 0px;
+}
+.dropdown-menu{
+	min-width: 10rem;
+}
+.dropdown-submenu>a:after
+	{
+		content: none !important
+	}
+	
+.dropdown-submenu {
+                position: relative;
+            }
+
+ .dropdown-submenu> a:after {
+                content: ">";
+                float: right;
+            }
+
+.dropdown-submenu>.dropdown-menu {
+                top: 0;
+                left: 100%;
+                margin-top: 0px;
+                margin-left: 0px;
+            }
+
+            .dropdown-submenu:hover>.dropdown-menu {
+                display: block;
+				
+            }
+.dropdown-submenu.dropdown-item:hover{
+			background-color:#fff9 !important
+			}
+			.dropdown-divider {
+				border-top: 1px solid #dae0e5!important
+			}
+.page-link{
+	bolder:1px solid #adb5bd !important
+}
+
+div.post-summary {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+}
+.cb{
+	
+	 width: 170px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 30px;
+    -webkit-line-clamp: 3;
+	display: block;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+	height: 2.4em; 
+}	
+
+.ca
+{
+	
+	
+	 display: block;
+	 width: 200px;
+    overflow: hidden;
+	text-overflow: ellipsis;
+    height: 3.5rem; 
+	line-height: 23px;
+    position: relative;
+
+	
+}
+.cd
+{
+	line-height: 30px;
+    
+}
+
+
+	
+/* .ca:before { */
+      /* background: $excerpt-bg; */
+      /* bottom: 0; */
+      /* position: absolute; */
+      /* right: 0; */
+      /* float: right; */
+      /* content: '\2026'; */
+      /* margin-left: -3rem; */
+      /* width: 3rem; */
+    /* } */
+/* .ca:after { */
+      /* content: ''; */
+      /* background: $excerpt-bg; */
+      /* position: absolute; */
+      /* height: 50px; */
+      /* width: 100%; */
+      /* z-index: 1; */
+	/* } */
