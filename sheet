@@ -1,0 +1,10 @@
+Private Sub CommandButton1_Click()
+Call test
+End Sub
+
+Private Sub CommandButton2_Click()
+    Sheets(1).Range("R6").Value = 1
+    Sheets(1).TextBox1.Text = Sheets(2).Cells(1, 1).Value
+    Sheets(1).TextBox3 = ""
+    Sheets(1).TextBox4 = ""
+End Sub
