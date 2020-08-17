@@ -1,0 +1,48 @@
+Sub main()
+Dim fileToOpen As String
+Dim value_call
+fileToOpen = Application _
+.GetOpenFilename
+
+Workbooks.Open (fileToOpen)
+'Workbooks("BOOK1.XLS").Worksheets("Sheet1").Activate
+ Application.Workbooks("PSM.xlsx").Activate
+ Workbooks("PSM.xlsx").Worksheets(1).Activate
+ Call Find_row("PSM.xlsx", 1, "Simulation result")
+ 'MsgBox row_kekka
+ Call Find_column_2("PSM.xlsx", 1, "var", 47)
+ value_call = Workbooks("PSM.xlsx").Worksheets(1).Cells(48, 12).Value
+ MsgBox value_call
+End Sub
+Function Find_row(workbook_name As String, sheet_name As Integer, key_word As String) As Integer
+
+            Dim row_kekka As Integer
+            Dim c As Variant
+            
+            With Workbooks(workbook_name).Worksheets(sheet_name).Cells
+                    Set c = .Find(key_word, LookIn:=xlValues, LookAt:=xlWhole)
+                    If Not c Is Nothing Then
+                        row_kekka = c.Row
+                    End If
+            End With
+            Find_row = row_kekka
+             'MsgBox row_kekka
+End Function
+'ham tim kiem cot cua 1 cell khi da biet hang
+Function Find_column_2(workbook_name As String, sheet_name As Integer, ByVal key_word As String, ten_row As Integer) As Integer
+            'Dim row_kekka As Integer
+            Dim column_kekka As Integer
+            Dim c As Object
+            
+            
+            With Workbooks(workbook_name).Worksheets(sheet_name).Rows(ten_row)
+                    Set c = .Find(What:=key_word, LookIn:=xlValues, LookAt:=xlWhole, SearchOrder:=xlByRows, SearchDirection:=xlNext)
+                    If Not c Is Nothing Then
+                        column_kekka = c.Column
+                    Else
+                        column_kekka = 0
+                    End If
+            End With
+            Find_column_2 = column_kekka
+MsgBox column_kekka
+End Function
