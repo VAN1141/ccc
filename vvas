@@ -1,0 +1,972 @@
+Option Explicit
+            Dim Duongdanfile_1 As String
+            Dim Duongdanfile_2 As String
+            Dim Workbook_SIMULATION結果 As String
+            Dim Workbook_現在VSLB As String
+            Dim chuoi_App As String
+            Dim co_baoloi As Integer
+
+'ham lay ten workbook
+Function tenfile_workbook(file_duongdan_workbook As String, key_work As String)
+            Dim dodai_duongdan As Integer
+            Dim vitrixuathien_keywork As Integer
+            
+            dodai_duongdan = Len(file_duongdan_workbook)
+            'vitrixuathien_keywork = InStr(1, file_duongdan_workbook, key_work)
+            vitrixuathien_keywork = InStrRev(file_duongdan_workbook, key_work, -1)
+            tenfile_workbook = Right(file_duongdan_workbook, dodai_duongdan - vitrixuathien_keywork)
+End Function
+
+'ham tim kiem hang cua 1 cell
+Function Find_row(workbook_name As String, sheet_name As Integer, key_word As String) As Integer
+
+            Dim row_kekka As Integer
+            Dim c As Variant
+            
+            With Workbooks(workbook_name).Worksheets(sheet_name).Cells
+                    Set c = .Find(key_word, LookIn:=xlValues, LookAt:=xlWhole)
+                    If Not c Is Nothing Then
+                        row_kekka = c.Row
+                    End If
+            End With
+            Find_row = row_kekka
+End Function
+
+'ham tim kiem cot cua 1 cell
+Function Find_column(workbook_name As String, sheet_name As Integer, key_word As String) As Integer
+        
+            'Dim row_kekka As Integer
+            Dim column_kekka As Integer
+            Dim c As Variant
+            
+            With Workbooks(workbook_name).Worksheets(sheet_name).Cells
+                    Set c = .Find(key_word, LookIn:=xlValues, LookAt:=xlWhole)
+                    If Not c Is Nothing Then
+                        column_kekka = c.column
+                    End If
+            End With
+            Find_column = column_kekka
+End Function
+
+'ham tim kiem cot cua 1 cell khi da biet hang
+Function Find_column_2(workbook_name As String, sheet_name As Integer, ByVal key_word As String, cell_name As Object, ten_row As Integer) As Integer
+            'Dim row_kekka As Integer
+            Dim column_kekka As Integer
+            Dim c As Object
+            
+            
+            With Workbooks(workbook_name).Worksheets(sheet_name).Rows(ten_row)
+                    Set c = .Find(What:=key_word, After:=cell_name, LookIn:=xlValues, LookAt:=xlWhole, SearchOrder:=xlByRows, SearchDirection:=xlNext)
+                    If Not c Is Nothing Then
+                        column_kekka = c.column
+                    Else
+                        column_kekka = 0
+                    End If
+            End With
+            Find_column_2 = column_kekka
+
+End Function
+
+'ham tim hang cuoi cung cua sheet
+Function findLastRowOfsheet(workbook_name As String, sheet_name As Integer) As Integer
+            Dim lastrow As Integer
+        
+            lastrow = Workbooks(workbook_name).Worksheets(sheet_name).UsedRange.Rows(Workbooks(workbook_name).Worksheets(sheet_name).UsedRange.Rows.Count).Row
+            findLastRowOfsheet = lastrow
+
+End Function
+'ham do khoang cach giua 2 o co du lieu
+Function khoangcach(workbook_name As String, sheet_name As Integer, ByVal row_start As Integer, column As Integer, lastrow As Integer) As Integer
+            Dim a, b, L As Integer
+            a = row_start
+            row_start = row_start + 1
+            Do While (Workbooks(workbook_name).Worksheets(sheet_name).Cells(row_start, column).Value = "")
+                If (row_start <= lastrow) Then
+                    row_start = row_start + 1
+                Else
+                    Exit Do
+                End If
+                
+            Loop
+            b = row_start
+            L = b - a
+            khoangcach = L
+    
+End Function
+
+'so sanh gia tri cua 2 cell
+Function sosanh_value(workbook_name_1 As String, workbook_name_2 As String, row_1 As Integer, column_1 As Integer, row_2 As Integer, column_2 As Integer) As Integer
+            Dim a, b As Integer
+            
+            a = Workbooks(workbook_name_1).Worksheets(1).Cells(row_1, column_1).Value
+            b = Workbooks(workbook_name_2).Worksheets(1).Cells(row_2, column_2).Value
+            sosanh_value = a - b
+End Function
+'ham lay vung App de copy
+Function get_range_App(chuoi_name As String) As Integer
+            Dim As chuoi_name_1, chuoi_name_2 As String
+            Dim vitri_ngancach, dodai_chuoi As Integer
+            
+            dodai_chuoi = Len(chuoi_name)
+            vitri_ngancach = InStr(1, chuoi_name, "-")
+            If vitri_ngancach <> 0 Then
+                chuoi_name_1 = Left(chuoi_name, vitri_ngancach - 1)
+                chuoi_name_1 = Right(chuoi_name, dodai_chuoi - vitri_ngancach)                          'まだだ・・・・・・・・・・・・・・・・・・・・・・・・・・・・・・
+                
+            Else
+                get_chuoiname = chuoi_name
+            End If
+
+End Function
+'ham copy du lieu vao workbook trung gian
+Function copy_trunggian(trunggian_column As Integer, workbook_nguon As String, nguon_column As Integer, row_start As Integer, row_end As Integer) As String
+            Dim i As Integer
+            For i = row_start To row_end
+                ThisWorkbook.Worksheets(2).Cells(i + 1 - row_start, trunggian_column).Value = Workbooks(workbook_nguon).Worksheets(1).Cells(i, nguon_column).Value
+            Next i
+End Function
+
+'ham tim vi tri cot trong trong sheet bat ky cua tool
+Function find_cottrong(sheet_name As Integer) As Integer
+            Dim i As Integer
+            i = 1
+            
+            Do While (ThisWorkbook.Worksheets(sheet_name).Cells(1, i).Value <> "")
+                i = i + 1
+            Loop
+                find_cottrong = i
+    
+End Function
+'XOA DU LIEU CU O TOOL.SHEET2 Sau khi thao tac xong O SHEET 2
+Sub xoadulieu_sheet2()
+            ThisWorkbook.Worksheets(2).Activate
+            Columns("A:A").Select
+            Range(Selection, Selection.End(xlToRight)).Select
+            Selection.Delete Shift:=xlUp
+            'XOA DU LIEU CU O TOOL.SHEET2 Sau khi thao tac xong O SHEET 2
+            ThisWorkbook.Worksheets(2).Activate
+            Columns("A:A").Select
+            Range(Selection, Selection.End(xlToRight)).Select
+            Selection.Delete Shift:=xlUp
+End Sub
+'XOA DU LIEU CU O TOOL.SHEET3 Sau khi thao tac xong O SHEET 3
+Sub xoadulieu_sheet3()
+    
+            ThisWorkbook.Worksheets(3).Activate
+            Columns("A:A").Select
+            Range(Selection, Selection.End(xlToRight)).Select
+            Selection.Delete Shift:=xlUp
+            'XOA DU LIEU CU O TOOL.SHEET3 Sau khi thao tac xong O SHEET 3
+            ThisWorkbook.Worksheets(3).Activate
+            Columns("A:A").Select
+            Range(Selection, Selection.End(xlToRight)).Select
+            Selection.Delete Shift:=xlUp
+            
+            ThisWorkbook.Worksheets(1).Activate
+            
+            'MsgBox "ThisWorkbook.Name = " & ThisWorkbook.Name
+End Sub
+Function GetFileNames(ByVal FolderPath As String) As Variant
+            Dim Result As Variant
+            Dim i As Integer
+            Dim MyFile As Object
+            Dim MyFSO As Object
+            Dim MyFolder As Object
+            Dim MyFiles As Object
+            Set MyFSO = CreateObject("Scripting.FileSystemObject")
+            Set MyFolder = MyFSO.GetFolder(FolderPath)
+            Set MyFiles = MyFolder.Files
+            ReDim Result(1 To MyFiles.Count)
+            i = 1
+            For Each MyFile In MyFiles
+            Result(i) = MyFile.Name
+            i = i + 1
+            Next MyFile
+            GetFileNames = Result
+End Function
+
+Sub main()
+            Dim file1 As String
+            Dim file2 As String
+            Dim CheckDir_1 As String
+            Dim CheckDir_2 As String
+            Dim Duongdanfolder_1 As String
+            Dim Duongdanfolder_2 As String
+                                
+            Application.ScreenUpdating = False
+            Application.DisplayAlerts = False
+                                        
+            'kiem tra xem APP da nhap dung chua
+            
+            chuoi_App = ThisWorkbook.Sheets(1).TextBox3.Text
+                       
+            If chuoi_App = "" Then
+                MsgBox "ban chua nhap APP"
+                End
+            End If
+            'kiem tra xem APP nhap vao co dau cach hay khong
+            If InStr(1, chuoi_App, " ") <> 0 Then
+                MsgBox "ban khong duoc nhap ky tu dau cach"
+                End
+            End If
+            
+            'kiem tra xem file co bi nhap sai hay khong, neu khong thi mo file
+            CheckDir_1 = Dir(ThisWorkbook.Sheets(1).TextBox1.Value, vbDirectory)
+            CheckDir_2 = Dir(ThisWorkbook.Sheets(1).TextBox2.Value, vbDirectory)
+            Duongdanfolder_1 = ThisWorkbook.Sheets(1).TextBox1.Value
+            Duongdanfolder_2 = ThisWorkbook.Sheets(1).TextBox2.Value
+            'truoc khi kiem tra dir de mo file thi kiem tra xem duong dan nhap vao dung chua
+            If (InStr(1, ThisWorkbook.Sheets(1).TextBox2.Value, "SIMULATION結果") = 0) Then
+                MsgBox "file SIMULATION結果 khong ton tai"
+                End
+            End If
+            
+            If (InStr(1, ThisWorkbook.Sheets(1).TextBox1.Value, "現在VSLB") = 0) Then
+                MsgBox "file 現在VSLB khong ton tai"
+                End
+            End If
+            
+            If (CheckDir_1 = "") Then
+                MsgBox "file SIMULATION結果 khong ton tai"
+                End
+                
+            ElseIf (CheckDir_2 = "") Then
+                MsgBox "file 現在VSLB khong ton tai"
+                End
+        
+            Else
+            Dim GetFileNames, GetFileNames2 As Variant
+            Dim Result, Result2 As Variant
+            Dim i, i2 As Integer
+            Dim MyFile, MyFile2 As Object
+            Dim MyFSO, MyFSO2 As Object
+            Dim MyFolder, MyFolder2 As Object
+            Dim MyFiles, MyFiles2 As Object
+            Dim Result1_moi, Result2_moi As String
+            Set MyFSO = CreateObject("Scripting.FileSystemObject")
+            Set MyFolder = MyFSO.GetFolder(Duongdanfolder_1)
+            Set MyFiles = MyFolder.Files
+            ReDim Result(1 To MyFiles.Count)
+            i = 1
+            For Each MyFile In MyFiles
+            Result(i) = MyFile.Name
+                    Set MyFSO2 = CreateObject("Scripting.FileSystemObject")
+                    Set MyFolder2 = MyFSO2.GetFolder(Duongdanfolder_2)
+                    Set MyFiles2 = MyFolder2.Files
+                    ReDim Result2(1 To MyFiles2.Count)
+                    i2 = 1
+                    For Each MyFile2 In MyFiles2
+                        Result2(i2) = MyFile2.Name
+                        Dim dodai_duongdanResult1 As Integer
+                        Dim vitrixuathien_keyworkResult1 As String
+                        Dim dodai_duongdanResult2 As Integer
+                        Dim vitrixuathien_keyworkResult2 As String
+                        
+                        dodai_duongdanResult1 = Len(Result(i))
+                        vitrixuathien_keyworkResult1 = InStrRev(Result(i), "G", -1)
+                        Result1_moi = Right(Result(i), dodai_duongdanResult1 - vitrixuathien_keyworkResult1 + 1)
+                        dodai_duongdanResult2 = Len(Result2(i2))
+                        vitrixuathien_keyworkResult2 = InStrRev(Result2(i2), "G", -1)
+                        Result2_moi = Right(Result2(i2), dodai_duongdanResult2 - vitrixuathien_keyworkResult2 + 1)
+                        
+                        
+                        If Result1_moi = Result2_moi Then
+                             Duongdanfile_1 = Duongdanfolder_1 + "\" + Result(i)
+                             Duongdanfile_2 = Duongdanfolder_2 + "\" + Result2(i2)
+                            Excel.Application.Workbooks.Open (Duongdanfile_1)
+                            Excel.Application.Workbooks.Open (Duongdanfile_2)
+                            Call sapxep
+                            If i2 = 1 Then
+                                
+                                Dim ExWb As Workbook
+                                Set ExWb = Workbooks.Add
+                                ActiveWorkbook.Sheets(1).Activate
+                                Range("A1").Select
+                                ActiveSheet.Paste
+                                ActiveSheet.Name = Result1_moi
+                                
+                                If (co_baoloi = 1) Then
+                                    'tomau
+                                    Dim sheets_tam As Worksheet
+                                    Set sheets_tam = ActiveSheet
+                                          With sheets_tam.Tab
+                                        .Color = 255
+                                        .TintAndShade = 0
+                                    End With
+                                End If
+                                
+                            End If
+                            If i2 > 1 Then
+                                ExWb.Activate
+                                Sheets.Add After:=ActiveSheet
+                                Range("A1").Select
+                                ActiveSheet.Paste
+                                ActiveSheet.Name = Result1_moi
+                                If (co_baoloi = 1) Then
+                                    'tomau
+                                    
+                                    Set sheets_tam = ActiveSheet
+                                          With sheets_tam.Tab
+                                        .Color = 255
+                                        .TintAndShade = 0
+                                    End With
+                                End If
+                                
+                                
+                            End If
+                            Call xoadulieu_sheet2
+                            Call xoadulieu_sheet3
+                     
+                        End If
+                            
+                             i2 = i2 + 1
+                    Next MyFile2
+                    
+                    'GetFileNames2 = Result2
+                    
+            i = i + 1
+            Next MyFile
+                   
+                   
+                    'Workbooks.Open Filename:=ThisWorkbook.Sheets(1).TextBox1.Value
+                    'Workbooks.Open Filename:=ThisWorkbook.Sheets(1).TextBox2.Value
+        
+            End If
+            'lay link file
+            'Duongdanfile_1 = ThisWorkbook.Sheets(1).TextBox1.Value
+            'Duongdanfile_2 = ThisWorkbook.Sheets(1).TextBox2.Value
+    End Sub
+
+  Sub sapxep()
+    
+             Workbook_現在VSLB = tenfile_workbook(Duongdanfile_1, "\")
+            Workbook_SIMULATION結果 = tenfile_workbook(Duongdanfile_2, "\")
+                      
+            'Copy file Workbook_現在VSLB
+            Dim c As Variant
+            
+            'tim hang cuoi cung cua sheet trong Workbook_現在VSLB
+            Dim lastrow_Workbook_現在VSLB As Integer
+            
+            lastrow_Workbook_現在VSLB = findLastRowOfsheet(Workbook_現在VSLB, 1)
+            'MsgBox "lastrow_workbookSIMULATION結果 = " & lastrow_Workbook_現在VSLB
+            
+            'tim hang va cot cua cell Var trong Workbook_現在VSLB
+            Dim Var_row As Integer
+            Dim Var_column As Integer
+            
+            Var_row = Find_row(Workbook_現在VSLB, 1, "Var")
+            'MsgBox "Var_row = " & Var_row
+            Var_column = Find_column(Workbook_現在VSLB, 1, "Var")
+            'MsgBox "Var_column = " & Var_column
+           ' copy vao sheet trung gian (sheet2)
+           
+            c = copy_trunggian(1, Workbook_現在VSLB, Var_column, Var_row, lastrow_Workbook_現在VSLB)
+             'tim cot cua cell DesignerNote va copy du lieu
+            Dim DesignerNote_column As Integer
+            DesignerNote_column = Find_column_2(Workbook_現在VSLB, 1, "DesignerNote", Cells(Var_row, Var_column), Var_row)
+            'tim cot du lieu trong trong worksheet 2
+         
+            'copy vao sheet trung gian (sheet2)
+            c = copy_trunggian(2, Workbook_現在VSLB, DesignerNote_column, Var_row, lastrow_Workbook_現在VSLB)
+            
+            'tim cot cua cell Spec va copy du lieu
+            Dim Spec_column As Integer
+            Spec_column = Find_column_2(Workbook_現在VSLB, 1, "Spec", Cells(Var_row, Var_column), Var_row)
+            'tim cot du lieu trong trong worksheet 2
+        
+            'copy vao sheet trung gian (sheet2)
+            c = copy_trunggian(3, Workbook_現在VSLB, Spec_column, Var_row, lastrow_Workbook_現在VSLB)
+        
+              'tim gia tri APP
+            
+            Dim dodai_App As Integer
+            Dim chuoi_App_tam As String
+            
+            dodai_App = Len(chuoi_App)
+            chuoi_App_tam = chuoi_App
+            
+            Dim App(20) As String
+            Dim n, i As Integer
+            
+            'lay ra 1 chuoi A(n) de phan tich App
+            n = 0
+            For i = 1 To dodai_App
+                If InStr(i, chuoi_App_tam, ",") <> 0 Then
+                    i = InStr(i, chuoi_App_tam, ",")                                    'DANG SUAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+                    If (i = dodai_App) Then
+                        'Close Workbook
+                        Workbooks(Workbook_SIMULATION結果).Close SaveChanges:=False
+                        Workbooks(Workbook_現在VSLB).Close SaveChanges:=False
+                    
+                        'Call xoadulieu_sheet2
+                        'Call xoadulieu_sheet3
+                        MsgBox "App nhap vao khong hop le"
+                        End
+                    End If
+                    
+                    App(n) = Left(chuoi_App_tam, i - 1)
+                    n = n + 1
+                    chuoi_App_tam = Right(chuoi_App, dodai_App - i)
+                    dodai_App = dodai_App - i
+                    i = 1
+                Else
+                    App(n) = chuoi_App_tam
+                    Exit For
+                End If
+                
+            Next i
+            'MsgBox "n =" & n
+            
+            Dim chuoi_name_1, chuoi_name_2 As String
+            Dim vitri_ngancach, dodai_chuoi As Integer
+            
+            For i = 0 To n
+                
+            
+                dodai_chuoi = Len(App(i))
+                vitri_ngancach = InStr(1, App(i), "-")
+                If vitri_ngancach <> 0 Then
+                    chuoi_name_1 = Left(App(i), vitri_ngancach - 1)
+                    Dim luulai_chuoiname_1 As String
+                    luulai_chuoiname_1 = chuoi_name_1
+        
+                    
+                    'kiem tra xem chuoi_name_1 co phai so khong
+                    If (IsNumeric(chuoi_name_1) = 0) Then
+                        'Close Workbook
+                        Workbooks(Workbook_SIMULATION結果).Close SaveChanges:=False
+                        Workbooks(Workbook_現在VSLB).Close SaveChanges:=False
+                    
+                        Call xoadulieu_sheet2
+                        Call xoadulieu_sheet3
+                        MsgBox "App nhap vao khong hop le"
+                        End
+                    End If
+                    
+                    chuoi_name_1 = CStr(CInt(chuoi_name_1))
+                    
+                    
+                    'MsgBox "chuoi_name_1 =" & chuoi_name_1
+                    chuoi_name_2 = Right(App(i), dodai_chuoi - vitri_ngancach)
+                    Dim luulai_chuoiname_2 As String
+                    luulai_chuoiname_2 = chuoi_name_2
+             
+                    
+                    'kiem tra xem chuoi_name_2 co phai so khong
+                    If (IsNumeric(chuoi_name_2) = 0) Then
+                        'Close Workbook
+                        Workbooks(Workbook_SIMULATION結果).Close SaveChanges:=False
+                        Workbooks(Workbook_現在VSLB).Close SaveChanges:=False
+                    
+                        Call xoadulieu_sheet2
+                        Call xoadulieu_sheet3
+                        MsgBox "App nhap vao khong hop le"
+                        End
+                    End If
+                    
+                    chuoi_name_2 = CStr(CInt(chuoi_name_2))
+                    
+                    Dim chuoi_name_1_column As Integer
+                    Dim chuoi_name_2_column As Integer
+                     Dim column_start_App1 As Integer
+                     column_start_App1 = Spec_column + 2
+                     Dim column_end_App1 As Integer
+                     Dim i2 As Integer
+                     
+                     i2 = 1
+                     Do While (Workbooks(Workbook_現在VSLB).Worksheets(1).Cells(Var_row, i2).Value <> "")
+                         i2 = i2 + 1
+                     Loop
+                     column_end_App1 = i2 - 1
+                    
+                    Dim hcn1 As String
+                    Dim kcn1 As Integer
+                    Dim icn1 As Integer
+                    Dim icn2 As Integer
+                    Dim icn3 As Integer
+                    
+                 
+                   For icn1 = column_start_App1 To column_end_App1
+                      hcn1 = Replace(Workbooks(Workbook_現在VSLB).Worksheets(1).Cells(Var_row, icn1).Value, " ", "")
+                      kcn1 = CInt(hcn1)
+                   
+                    If kcn1 = CInt(chuoi_name_1) Then
+                        icn2 = icn1
+                        End If
+                    If kcn1 = CInt(chuoi_name_2) Then
+                        icn3 = icn1
+                                                            
+                      End If
+                  Next icn1
+               
+                    
+                    If (icn2 = 0) Then
+                        'Close Workbook
+                        Workbooks(Workbook_SIMULATION結果).Close SaveChanges:=False
+                        Workbooks(Workbook_現在VSLB).Close SaveChanges:=False
+                    
+                        Call xoadulieu_sheet2
+                        Call xoadulieu_sheet3
+                        MsgBox "Khong tim thay App " & luulai_chuoiname_1 & " vui long nhap lai App"
+                        End
+                    End If
+                    
+                    If (icn3 = 0) Then
+                        'Close Workbook
+                        Workbooks(Workbook_SIMULATION結果).Close SaveChanges:=False
+                        Workbooks(Workbook_現在VSLB).Close SaveChanges:=False
+                    
+                        Call xoadulieu_sheet2
+                        Call xoadulieu_sheet3
+                        MsgBox "Khong tim thay App " & luulai_chuoiname_2 & " vui long nhap lai App"
+                        End
+                    End If
+        
+                    Dim j As Integer
+                    For j = icn2 To icn3
+                        Dim copy_to_column As Integer
+                        copy_to_column = find_cottrong(2)
+                       ' MsgBox "copy_to_column =" & copy_to_column
+                         c = copy_trunggian(copy_to_column, Workbook_現在VSLB, j, Var_row, lastrow_Workbook_現在VSLB)
+                    Next j
+        
+                Else
+                    Dim chuoi_name_column As Integer
+                    Dim luulai_App As String
+                    luulai_App = App(i)
+                    
+                    
+                    'kiem tra xem App(i) co phai so khong
+                    If (IsNumeric(App(i)) = 0) Then
+                        'Close Workbook
+                        Workbooks(Workbook_SIMULATION結果).Close SaveChanges:=False
+                        Workbooks(Workbook_現在VSLB).Close SaveChanges:=False
+                    
+                        Call xoadulieu_sheet2
+                        Call xoadulieu_sheet3
+                        MsgBox "App nhap vao khong hop le"
+                        End
+                    End If
+                    
+                    'App(i) = CInt(App(i))
+                   
+                     column_start_App1 = Spec_column + 2
+                   
+                    
+                     
+                     i2 = 1
+                     Do While (Workbooks(Workbook_現在VSLB).Worksheets(1).Cells(Var_row, i2).Value <> "")
+                         i2 = i2 + 1
+                     Loop
+                     column_end_App1 = i2 - 1
+                           
+                    
+        
+                     'luu tru cot dau tien trong Workbook_SIMULATION結果 co du lieu cua App
+                    
+                    Dim h1 As String
+                    Dim k1 As Integer
+                    Dim i1 As Integer
+          
+                For i1 = column_start_App1 To column_end_App1
+                    h1 = Replace(Workbooks(Workbook_現在VSLB).Worksheets(1).Cells(Var_row, i1).Value, " ", "")
+                    k1 = CInt(h1)
+                    If k1 = CInt(App(i)) Then
+                   ' MsgBox "k"
+                       
+                    If (i1 = 0) Then
+                        'Close Workbook
+                        Workbooks(Workbook_現在VSLB).Close SaveChanges:=False
+                        Workbooks(Workbook_SIMULATION結果).Close SaveChanges:=False
+                    
+                        Call xoadulieu_sheet2
+                        Call xoadulieu_sheet3
+                        MsgBox "khong tim thay App " & luulai_App & " vui long nhap lai App"
+                        End
+                    End If
+                                        
+                    
+                   copy_to_column = find_cottrong(2)
+                    'MsgBox "copy_to_column =" & copy_to_column
+                     
+                    c = copy_trunggian(copy_to_column, Workbook_現在VSLB, i1, Var_row, lastrow_Workbook_現在VSLB)
+                    
+                    End If
+             Next i1
+           
+          End If
+        Next i
+            
+        
+        
+        
+'COPY DU LIEU TU FILE Workbook_SIMULATION結果
+            
+                'tim hang cuoi cung cua sheet trong Workbook_SIMULATION結果
+                Dim lastrow_Workbook_SIMULATION結果 As Integer
+                
+                lastrow_Workbook_SIMULATION結果 = findLastRowOfsheet(Workbook_SIMULATION結果, 1)
+                'MsgBox "lastrow_workbook現在VSLB = " & lastrow_workbook現在VSLB
+              
+             
+                'tim hang va cot cua cell Var trong Workbook_SIMULATION結果
+                Dim Var_rowSIMULATION As Integer
+                Dim Var_columnSIMULATION As Integer
+                
+                Var_rowSIMULATION = Find_row(Workbook_SIMULATION結果, 1, "Var")
+                'MsgBox "Var_row = " & Var_row
+                Var_columnSIMULATION = Find_column(Workbook_SIMULATION結果, 1, "Var")
+                'MsgBox "Var_column = " & Var_column
+                
+                
+                
+                'LAM VI TRI NGAN CACH GIUA 2 VUNG DU LIEU
+                
+                copy_to_column = find_cottrong(2)
+                'luu tru cot cuoi cung copy du lieu cua App trong Workbook_部品表
+               
+                column_end_App1 = copy_to_column - 1                                                                       'column_end_App1
+                'MsgBox "column_end_App1 = " & column_end_App1
+                
+                ThisWorkbook.Worksheets(2).Activate
+                    Cells(1, copy_to_column).Select
+                    Cells(1, copy_to_column).Value = " "
+                    Range(Selection, Selection.End(xlDown)).Select
+                    With Selection.Interior
+                        .Pattern = xlSolid
+                        .PatternColorIndex = xlAutomatic
+                        .ThemeColor = xlThemeColorDark1
+                        .TintAndShade = -0.349986266670736
+                        .PatternTintAndShade = 0
+                    End With
+                               
+                 'copy_to_column = find_cottrong(2) + 1
+                copy_to_column = copy_to_column + 1
+                Dim vitricot_Var2 As Integer
+                vitricot_Var2 = copy_to_column
+            
+                
+                    'copy vao sheet trung gian (sheet2)
+                c = copy_trunggian(copy_to_column, Workbook_SIMULATION結果, Var_columnSIMULATION, Var_rowSIMULATION, lastrow_Workbook_SIMULATION結果)
+                
+                'tim cot cua cell DesignerNote va copy du lieu
+                Dim DesignerNote_columnSIMULATION As Integer
+                DesignerNote_columnSIMULATION = Find_column_2(Workbook_SIMULATION結果, 1, "DesignerNote", Cells(Var_rowSIMULATION, Var_columnSIMULATION), Var_rowSIMULATION)
+                'tim cot du lieu trong trong worksheet 2
+                copy_to_column = find_cottrong(2)
+                'copy vao sheet trung gian (sheet2)
+                c = copy_trunggian(copy_to_column, Workbook_SIMULATION結果, DesignerNote_columnSIMULATION, Var_rowSIMULATION, lastrow_Workbook_SIMULATION結果)
+                
+                'tim cot cua cell Spec va copy du lieu
+                Dim Spec_columnSIMULATION As Integer
+                Spec_columnSIMULATION = Find_column_2(Workbook_SIMULATION結果, 1, "Spec", Cells(Var_rowSIMULATION, Var_columnSIMULATION), Var_rowSIMULATION)
+                'tim cot du lieu trong trong worksheet 2
+                copy_to_column = find_cottrong(2)
+                'copy vao sheet trung gian (sheet2)
+                c = copy_trunggian(copy_to_column, Workbook_SIMULATION結果, Spec_columnSIMULATION, Var_rowSIMULATION, lastrow_Workbook_SIMULATION結果)
+                
+                'luu tru cot dau tien trong lastrow_Workbook_SIMULATION結果 co du lieu cua App
+                Dim column_start_App2 As Integer
+                column_start_App2 = Spec_columnSIMULATION + 2                                                                                     'column_start_App2
+                'MsgBox "column_start_App2 = " & column_start_App2
+                Dim column_end_App2 As Integer
+                'column_end_App2 = Workbooks(Workbook_SIMULATION結果).Worksheets(1).Cells(1, Columns.Count).End(xlToLeft).column
+                i = 1
+                Do While (Workbooks(Workbook_SIMULATION結果).Worksheets(1).Cells(Var_rowSIMULATION, i).Value <> "")
+                    i = i + 1
+                Loop
+                column_end_App2 = i - 1                                                                                                 'column_end_App2
+                'MsgBox "column_end_App1 = " & column_end_App2
+                Dim h As String
+                Dim k As Integer
+                Dim x As Integer
+                column_start_App1 = 4
+                
+                For i = column_start_App1 To column_end_App1
+                    For j = column_start_App2 To column_end_App2
+                        'cint(replace(Workbooks(Workbook_現在VSLB).Worksheets(1).Cells(Var_row, j).Value," ","")) = 5
+                        h = Replace(Workbooks(Workbook_SIMULATION結果).Worksheets(1).Cells(Var_rowSIMULATION, j).Value, " ", "")
+                        k = CInt(h)
+                        x = Replace(ThisWorkbook.Worksheets(2).Cells(1, i).Value, " ", "")
+                        If k = CInt(x) Then
+                            copy_to_column = find_cottrong(2)
+                            c = copy_trunggian(copy_to_column, Workbook_SIMULATION結果, j, Var_rowSIMULATION, lastrow_Workbook_SIMULATION結果)
+                        End If
+                    Next j
+                Next i
+                
+                ' Close Workbook
+                Workbooks(Workbook_SIMULATION結果).Close SaveChanges:=False
+                Workbooks(Workbook_現在VSLB).Close SaveChanges:=False
+                 
+                 
+                Dim lastrow_sheet2 As Integer
+                lastrow_sheet2 = findLastRowOfsheet(ThisWorkbook.Name, 2)
+                'MsgBox "lastrow_sheet2 = " & lastrow_sheet2
+                
+                
+                'tim lastrow_left va lastrow_right o sheet 2 bang cach copy tung cai vao sheet 3 roi kiem tra
+                
+                'XOA DU LIEU CU O TOOL.SHEET3 TRUOC KHI LAM VIEC O SHEET 3
+                Call xoadulieu_sheet3
+                
+                'copy cot ben trai
+                ThisWorkbook.Worksheets(2).Activate
+                Worksheets(2).Range(Cells(1, 1), Cells(lastrow_sheet2, column_end_App1)).Copy Destination:=Worksheets(3).Cells(1, 1)
+                Dim lastrow_left As Integer
+                lastrow_left = findLastRowOfsheet(ThisWorkbook.Name, 3)
+                'MsgBox "lastrow_left = " & lastrow_left
+                                                       
+                                    
+                'XOA DU LIEU CU O TOOL.SHEET3 Sau khi thao tac xong O SHEET 3
+                Call xoadulieu_sheet3
+              
+                'copy cot ben phai
+                ThisWorkbook.Worksheets(2).Activate
+                column_end_App2 = ThisWorkbook.Worksheets(2).Cells(1, Columns.Count).End(xlToLeft).column
+                'column_end_App2 = i - 1
+                
+                Worksheets(2).Range(Cells(1, vitricot_Var2), Cells(lastrow_sheet2, column_end_App2)).Copy Destination:=Worksheets(3).Cells(1, 1)
+                Dim lastrow_right As Integer
+                lastrow_right = findLastRowOfsheet(ThisWorkbook.Name, 3)
+                'MsgBox "lastrow_right = " & lastrow_right
+            
+            'XOA DU LIEU CU O TOOL.SHEET3 Sau khi thao tac xong O SHEET 3
+            Call xoadulieu_sheet3
+            
+            'SAP XEP THANG HANG DU LIEU CUA 2 NGUON
+            
+            'copy dong 1 o sheet2 vao sheet3
+            ThisWorkbook.Worksheets(2).Activate
+                Range("A1").Select
+                Range(Selection, Selection.End(xlToRight)).Select
+                Selection.Copy
+                Sheets(3).Select
+                Range("A1").Select
+                ActiveSheet.Paste
+            
+            
+            'bien tim vi tri tiep theo de copy trong sheet3
+            Dim vitricopy_tieptheo As Integer
+            vitricopy_tieptheo = 2
+            
+            'bien tim do dai cua 1 VAR
+            Dim khoangcach_1 As Integer
+            Dim khoangcach_2 As Integer
+            
+            ThisWorkbook.Worksheets(2).Activate
+            Dim j_chay As Integer
+            j_chay = 2
+            
+            For i = 2 To lastrow_left
+                If (Cells(i, 1) <> "") Then
+                    'MsgBox "vitricopy_tieptheo=" & vitricopy_tieptheo
+                    khoangcach_1 = khoangcach(ThisWorkbook.Name, 2, i, 1, lastrow_left)
+                    'MsgBox "khoangcach_1=" & khoangcach_1
+                    For j = j_chay To lastrow_right
+                        If (Cells(j, vitricot_Var2) <> "") Then
+                            
+                            khoangcach_2 = khoangcach(ThisWorkbook.Name, 2, j, vitricot_Var2, lastrow_right)
+                            'MsgBox "khoangcach_2=" & khoangcach_2
+                            'MsgBox "vitricot_Var2=" & vitricot_Var2
+                            
+                            If (Cells(i, 1).Value < Cells(j, vitricot_Var2).Value) Then
+                                Worksheets(2).Range(Cells(i, 1), Cells(i + khoangcach_1 - 1, column_end_App1)).Copy Destination:=Worksheets(3).Cells(vitricopy_tieptheo, 1)
+                                vitricopy_tieptheo = vitricopy_tieptheo + khoangcach_1
+                                Exit For
+                            
+                            ElseIf (Cells(i, 1).Value = Cells(j, vitricot_Var2).Value) Then
+                                Worksheets(2).Range(Cells(i, 1), Cells(i + khoangcach_1 - 1, column_end_App1)).Copy Destination:=Worksheets(3).Cells(vitricopy_tieptheo, 1)
+                                Worksheets(2).Range(Cells(j, vitricot_Var2), Cells(j + khoangcach_2 - 1, column_end_App2)).Copy Destination:=Worksheets(3).Cells(vitricopy_tieptheo, vitricot_Var2)
+                                If (khoangcach_1 > khoangcach_2) Then
+                                    vitricopy_tieptheo = vitricopy_tieptheo + khoangcach_1
+                                Else
+                                    Worksheets(2).Range(Cells(i, 1), Cells(i + khoangcach_1 - 1, column_end_App1)).Copy Destination:=Worksheets(3).Cells(vitricopy_tieptheo, 1)
+                                    vitricopy_tieptheo = vitricopy_tieptheo + khoangcach_2
+                                End If
+                                'MsgBox "vitricopy_tieptheo=" & vitricopy_tieptheo
+                                j_chay = j_chay + khoangcach_2
+                                Exit For
+                            
+                            Else
+                                Worksheets(2).Range(Cells(j, vitricot_Var2), Cells(j + khoangcach_2 - 1, column_end_App2)).Copy Destination:=Worksheets(3).Cells(vitricopy_tieptheo, vitricot_Var2)
+                                vitricopy_tieptheo = vitricopy_tieptheo + khoangcach_2
+                                j_chay = j_chay + khoangcach_2
+                            End If
+                            
+                        End If
+                    
+                    Next j
+                    If (i = lastrow_left) And (j < lastrow_right) Then
+                            Worksheets(2).Range(Cells(j + khoangcach_2, vitricot_Var2), Cells(lastrow_right, column_end_App2)).Copy Destination:=Worksheets(3).Cells(vitricopy_tieptheo, vitricot_Var2)
+                    
+                    ElseIf (i < lastrow_left) And (j = lastrow_right + 1) Then
+                        Worksheets(2).Range(Cells(i, 1), Cells(lastrow_left, column_end_App1)).Copy Destination:=Worksheets(3).Cells(vitricopy_tieptheo, 1)
+                    End If
+                End If
+            
+            Next i
+            
+            'Tao vung ngan cach 2 vung du lieu o sheet 3
+            ThisWorkbook.Worksheets(3).Activate
+                Cells(1, vitricot_Var2 - 1).Select
+                Range(Selection, Selection.End(xlDown)).Select
+                With Selection.Interior
+                    .Pattern = xlSolid
+                    .PatternColorIndex = xlAutomatic
+                    .ThemeColor = xlThemeColorDark1
+                    .TintAndShade = -0.349986266670736
+                    .PatternTintAndShade = 0
+                End With
+        
+                        
+            'BAT DAU SO SANH DU LIEU 2 COT
+            
+            'BUOC 1: SAP XEP LAI VI TRI CAC VAR VA PHAN DU LIEU TRONG VAR CUNG HANG
+            
+            Dim lastrow_sheet3 As Integer
+            lastrow_sheet3 = findLastRowOfsheet(ThisWorkbook.Name, 3)
+            Dim A_sapxep(), B_sapxep() As String
+            Dim bien_napgiatri, bienchay_cot As Integer
+            Dim Ar_tam As String
+            
+            
+         
+            For i = 2 To lastrow_sheet3
+                If (Cells(i, 1).Value <> "") And (Cells(i, vitricot_Var2).Value <> "") Then
+                    khoangcach_1 = khoangcach(ThisWorkbook.Name, 3, i, 1, lastrow_sheet3)
+                    khoangcach_2 = khoangcach(ThisWorkbook.Name, 3, i, vitricot_Var2, lastrow_sheet3)
+                    'MsgBox "khoangcach_2 = " & khoangcach_2
+                    ReDim A_sapxep(1 To khoangcach_1) ' As String
+                    ReDim B_sapxep(1 To khoangcach_2) ' As String
+                    
+                    For bien_napgiatri = 1 To khoangcach_1
+                        A_sapxep(bien_napgiatri) = Cells(i + bien_napgiatri - 1, 3).Value
+                        'MsgBox "A_sapxep(bien_napgiatri) = " & A_sapxep(bien_napgiatri)
+                    Next bien_napgiatri
+                    
+                    For bien_napgiatri = 1 To khoangcach_2
+                        'MsgBox "bien_napgiatri = " & bien_napgiatri
+                        'MsgBox "Cells(i + bien_napgiatri - 1, vitricot_Var2 + 2).Value = " & Cells(i + bien_napgiatri - 1, vitricot_Var2 + 2).Value
+                        B_sapxep(bien_napgiatri) = Cells(i + bien_napgiatri - 1, vitricot_Var2 + 2).Value
+                        'MsgBox "Cells(i + bien_napgiatri - 1, vitricot_Var2 + 2).Value = " & Cells(i + bien_napgiatri - 1, vitricot_Var2 + 2).Value
+                    Next bien_napgiatri
+                    
+                    
+                    For j = 1 To khoangcach_1
+                        
+                        For k = 1 To khoangcach_2
+                            If (A_sapxep(j) = B_sapxep(k) And (j <> k) And (A_sapxep(j) <> "") And (A_sapxep(j) <> " ") And (B_sapxep(k) <> "") And (B_sapxep(k) <> " ")) Then
+                                'MsgBox "j = " & j
+                                'MsgBox "k = " & k
+                                
+                                Ar_tam = B_sapxep(j)
+                                'MsgBox "Ar_tam = " & Ar_tam
+                                B_sapxep(j) = B_sapxep(k)
+                                B_sapxep(k) = Ar_tam
+                                
+                                'nap lai gia tri cua mang vao excel
+                                For bien_napgiatri = 1 To khoangcach_2
+                                
+                                    Cells(i + bien_napgiatri - 1, vitricot_Var2 + 2).Value = B_sapxep(bien_napgiatri)
+                                
+                                Next bien_napgiatri
+                                
+                                For bienchay_cot = vitricot_Var2 + 3 To column_end_App2
+                                    'MsgBox "bienchay_cot = " & bienchay_cot
+                                    Ar_tam = Cells(j + i - 1, bienchay_cot).Value
+                                    Cells(j + i - 1, bienchay_cot) = Cells(k + i - 1, bienchay_cot).Value
+                                    Cells(k + i - 1, bienchay_cot).Value = Ar_tam
+                                Next bienchay_cot
+        
+                            End If
+                        Next k
+                    Next j
+                End If
+            Next i
+            
+            'BUOC 2: TO MAU DO VAO 2 O KHAC NHAU
+            
+            
+            co_baoloi = 0
+            
+            For i = 2 To lastrow_sheet3
+                For k = 1 To column_end_App1
+                    
+                    If (Cells(i, k).Value <> Cells(i, vitricot_Var2 + k - 1).Value) Then
+                        
+                        If (Not ((Cells(i, k).Value = "") And (Cells(i, vitricot_Var2 + k - 1).Value = " ") Or (Cells(i, k).Value = " ") And (Cells(i, vitricot_Var2 + k - 1).Value = ""))) Then
+                            Cells(i, k).Interior.ColorIndex = 37
+                            Cells(i, vitricot_Var2 + k - 1).Interior.ColorIndex = 37
+                            co_baoloi = 1
+                            
+                            
+                            End If
+        
+                    End If
+                    
+                    If (((Cells(i, k).Value = "") And (Cells(i, vitricot_Var2 + k - 1).Value = "0")) Or ((Cells(i, k).Value = "0") And (Cells(i, vitricot_Var2 + k - 1).Value = ""))) Then
+        
+                            Cells(i, k).Interior.ColorIndex = 37
+                            Cells(i, vitricot_Var2 + k - 1).Interior.ColorIndex = 37
+                            co_baoloi = 1
+                            
+                            
+                    End If
+        
+                
+                Next k
+            
+            Next i
+           
+            
+            'Lui tat ca xuong 1 dong de dien chu 部品表 va 現在VSLB
+            
+            Rows("1:1").Select
+            Selection.Insert Shift:=xlDown, CopyOrigin:=xlFormatFromLeftOrAbove
+            Range("A1:C1").Select
+            With Selection.Interior
+                .Pattern = xlSolid
+                .PatternColorIndex = xlAutomatic
+                .Color = 5296274
+                .TintAndShade = 0
+                .PatternTintAndShade = 0
+            End With
+            Range("A1").Select
+            ActiveCell.FormulaR1C1 = Workbook_現在VSLB
+            
+            
+            Range(Cells(1, vitricot_Var2), Cells(1, vitricot_Var2 + 2)).Select
+            With Selection.Interior
+                .Pattern = xlSolid
+                .PatternColorIndex = xlAutomatic
+                .Color = 5296274
+                .TintAndShade = 0
+                .PatternTintAndShade = 0
+            End With
+            Cells(1, vitricot_Var2).Select
+            ActiveCell.FormulaR1C1 = Workbook_SIMULATION結果
+               ThisWorkbook.Worksheets(3).Activate
+                                Cells.Select
+                                Selection.Copy
+                      
+           
+                   
+End Sub
+
+            
+
+
+
+
+
+
+
+
+
+
+
+      
+    
+
