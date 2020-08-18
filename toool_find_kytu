@@ -1,0 +1,61 @@
+Function FindAll(ByVal rng As Range, ByVal searchTxt As String) As Range
+    Dim foundCell As Range
+    Dim firstAddress
+    Dim rResult As Range
+    With rng
+        Set foundCell = .Find(What:=searchTxt, _
+                              After:=.Cells(.Cells.Count), _
+                              LookIn:=xlValues, _
+                              LookAt:=xlPart, _
+                              SearchOrder:=xlByRows, _
+                              SearchDirection:=xlNext, _
+                              MatchCase:=False)
+        If Not foundCell Is Nothing Then
+            firstAddress = foundCell.Address
+            Do
+                If rResult Is Nothing Then
+                    Set rResult = foundCell
+                Else
+                    Set rResult = Union(rResult, foundCell)
+                End If
+                Set foundCell = .FindNext(foundCell)
+            Loop While Not foundCell Is Nothing And foundCell.Address <> firstAddress
+        End If
+    End With
+
+    Set FindAll = rResult
+End Function
+
+'To search for a value in the whole workbook:
+Sub main()
+Dim wSh As Worksheet
+Dim foundCells As Range
+Dim a As Integer
+Dim b As String
+Dim d As String
+
+For Each wSh In ThisWorkbook.Worksheets
+    Set foundCells = FindAll(wSh.UsedRange, "G25112")
+    If Not foundCells Is Nothing Then
+        Debug.Print ("Results in sheet '" & wSh.Name & "':")
+        Dim cell As Range
+        For Each cell In foundCells
+       
+        a = cell.Row
+         '
+         b = ThisWorkbook.Worksheets(1).Cells(a + 1, 1).Value
+         If b = "@@@@@ASSY List 1" Then
+         d = ThisWorkbook.Worksheets(1).Cells(a + 4, 4).Value
+         Else
+         d = ""
+           End If
+         'Range("M&a").Select
+        ' Range(Ma).Select
+            Debug.Print ("The value has been found in cell: " & cell.Address)
+        Next
+         
+    End If
+Next
+End Sub
+
+
