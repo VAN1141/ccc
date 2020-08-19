@@ -1,0 +1,37 @@
+
+						BODY	1	T	T	T	T	T	T	T	T	T	T	T	T	T	T	T	T	T	T	T	T	T	T
+						ENGINE	2	C	C	C	C	C	C	C	C	C	C	C	C	C	C	C	C	C	C	C	C	C	C
+						ENGINE	3	H	H	H	H	H	H	H	H	H	H	H	H	H	H	H	H	H	H	H	H	H	H
+						AXLE	4	A	A	A	A	A	A	N	N	N	N	N	N	A	A	A	A	A	N	N	N	N	N
+						HANDLE	5	3	3	3	3	3	3	3	3	3	3	3	3	R	R	R	R	R	R	R	R	R	R
+						GRADE	6	C	D	H	R	S	T	C	D	H	R	S	T	E	F	F	U	U	E	F	F	U	U
+						TRANS	7	Z	Z	Z	Z	Z	Z	Z	Z	Z	Z	Z	Z	Z	Z	Z	Z	Z	Z	Z	Z	Z	Z
+						YEAR	8	|	|	|	|	|	|	|	|	|	|	|	|	|	|	|	|	|	|	|	|	|	|
+						INTAKE	9	G	G	Z	G	G	Z	G	G	Z	G	G	Z	G	G	Z	G	Z	G	G	Z	G	Z
+						ZONE	10	D	D	D	D	D	D	D	D	D	D	D	D	D	D	D	D	D	D	D	D	D	D
+						EQUIP	11	A	A	A	A	A	A	A	A	A	A	A	A	A	A	A	A	A	A	A	A	A	A
+V	H	Var	DesignerNote	So	AV	Spec	Ac	0 0 5 	0 1 0 	0 1 1 	0 1 2 	0 1 5 	0 2 0 	0 2 5 	0 3 0 	0 3 1 	0 3 2 	0 3 5 	0 4 0 	0 5 0 	0 5 5 	0 6 0 	0 6 5 	0 7 0 	0 7 5 	0 8 0 	0 8 5 	0 9 0 	0 9 5 
+		010	NML STD	001	 		JH													0	0	0			0	0	0		
+				001	A	CLASB														*					*				
+				001	E	CLASL															*	*				*	*		
+		020	MMC STD	001	 		JH	0	0					0	0														
+				001	A	CLAS2		*	*					*	*														
+				001	C	CLAS6			*						*														
+				001	E	CLASV			*						*														
+				001	H	CLASW			*						*														
+		025	MMC STD T/C	001	 		JH			0						0													
+				001	A	CLAS2				*						*													
+				001	C	CLAS6				*						*													
+				001	E	CLASV				*						*													
+				001	G	CLASW				*						*													
+		030	NML HWS	001	 		JH																0	0				0	0
+		035	NML HWS W/ SONAR	001	C	CLASJ	JH																*	*				*	*
+				001	F	CLASM																	*	*				*	*
+		040	MMC CUS	001	 		JH				0	0	0				0	0	0										
+				001	A	CLAS3					*						*												
+				001	C	CLAS4						*						*											
+				001	E	CLAS8						*						*											
+				001	M	CLASY						*						*											
+				001	P	CLASZ						*						*											
+	*	910	BOLERO	001	A	AUTC2	JH														*	*				*	*		
+	*			001	C	AUTC2*CLASL															*	*				*	*		
