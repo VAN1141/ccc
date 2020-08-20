@@ -1,0 +1,487 @@
+Option Explicit
+            Dim Duongdanfile_1 As String
+            Dim Duongdanfile_2 As String
+            Dim Workbook_PSM As String
+            Dim Workbook_check As String
+            Dim chuoi_App As String
+            Dim co_baoloi As Integer
+
+'ham lay ten workbook
+Function tenfile_workbook(file_duongdan_workbook As String, key_work As String)
+            Dim dodai_duongdan As Integer
+            Dim vitrixuathien_keywork As Integer
+            
+            dodai_duongdan = Len(file_duongdan_workbook)
+            'vitrixuathien_keywork = InStr(1, file_duongdan_workbook, key_work)
+            vitrixuathien_keywork = InStrRev(file_duongdan_workbook, key_work, -1)
+            tenfile_workbook = Right(file_duongdan_workbook, dodai_duongdan - vitrixuathien_keywork)
+End Function
+
+'ham tim kiem hang cua 1 cell
+Function Find_row(workbook_name As String, sheet_name As Integer, key_word As String) As Integer
+
+            Dim row_kekka As Integer
+            Dim c As Variant
+            
+            With Workbooks(workbook_name).Worksheets(sheet_name).Cells
+                    Set c = .Find(key_word, LookIn:=xlValues, LookAt:=xlWhole)
+                    If Not c Is Nothing Then
+                        row_kekka = c.Row
+                    End If
+            End With
+            Find_row = row_kekka
+
+End Function
+
+'ham tim kiem cot cua 1 cell
+Function Find_column(workbook_name As String, sheet_name As Integer, key_word As String) As Integer
+        
+            'Dim row_kekka As Integer
+            Dim column_kekka As Integer
+            Dim c As Variant
+            
+            With Workbooks(workbook_name).Worksheets(sheet_name).Cells
+                    Set c = .Find(key_word, LookIn:=xlValues, LookAt:=xlWhole)
+                    If Not c Is Nothing Then
+                        column_kekka = c.column
+                    End If
+            End With
+            Find_column = column_kekka
+End Function
+
+'ham tim kiem cot cua 1 cell khi da biet hang
+Function Find_column_2(workbook_name As String, sheet_name As Integer, ByVal key_word As String, cell_name As Object, ten_row As Integer) As Integer
+            'Dim row_kekka As Integer
+            Dim column_kekka As Integer
+            Dim c As Object
+            
+            
+            With Workbooks(workbook_name).Worksheets(sheet_name).Rows(ten_row)
+                    Set c = .Find(what:=key_word, After:=cell_name, LookIn:=xlValues, LookAt:=xlWhole, SearchOrder:=xlByRows, SearchDirection:=xlNext)
+                    If Not c Is Nothing Then
+                        column_kekka = c.column
+                    Else
+                        column_kekka = 0
+                    End If
+            End With
+            Find_column_2 = column_kekka
+
+End Function
+
+'ham tim hang cuoi cung cua sheet
+Function findLastRowOfsheet(workbook_name As String, sheet_name As Integer) As Integer
+            Dim lastrow As Integer
+        
+            lastrow = Workbooks(workbook_name).Worksheets(sheet_name).UsedRange.Rows(Workbooks(workbook_name).Worksheets(sheet_name).UsedRange.Rows.Count).Row
+            findLastRowOfsheet = lastrow
+
+End Function
+'ham do khoang cach giua 2 o co du lieu
+Function khoangcach(workbook_name As String, sheet_name As Integer, ByVal row_start As Integer, column As Integer, lastrow As Integer) As Integer
+            Dim a, b, L As Integer
+            a = row_start
+            row_start = row_start + 1
+            Do While (Workbooks(workbook_name).Worksheets(sheet_name).Cells(row_start, column).Value = "")
+                If (row_start <= lastrow) Then
+                    row_start = row_start + 1
+                Else
+                    Exit Do
+                End If
+                
+            Loop
+            b = row_start
+            L = b - a
+            khoangcach = L
+    
+End Function
+
+'so sanh gia tri cua 2 cell
+Function sosanh_value(workbook_name_1 As String, workbook_name_2 As String, row_1 As Integer, column_1 As Integer, row_2 As Integer, column_2 As Integer) As Integer
+            Dim a, b As Integer
+            
+            a = Workbooks(workbook_name_1).Worksheets(1).Cells(row_1, column_1).Value
+            b = Workbooks(workbook_name_2).Worksheets(1).Cells(row_2, column_2).Value
+            sosanh_value = a - b
+End Function
+'ham lay vung App de copy
+Function get_range_App(chuoi_name As String) As Integer
+            Dim As chuoi_name_1, chuoi_name_2 As String
+            Dim vitri_ngancach, dodai_chuoi As Integer
+            
+            dodai_chuoi = Len(chuoi_name)
+            vitri_ngancach = InStr(1, chuoi_name, "-")
+            If vitri_ngancach <> 0 Then
+                chuoi_name_1 = Left(chuoi_name, vitri_ngancach - 1)
+                chuoi_name_1 = Right(chuoi_name, dodai_chuoi - vitri_ngancach)                          'まだだ・・・・・・・・・・・・・・・・・・・・・・・・・・・・・・
+                
+            Else
+                get_chuoiname = chuoi_name
+            End If
+
+End Function
+'ham copy du lieu vao workbook trung gian
+Function copy_trunggian(trunggian_column As Integer, workbook_nguon As String, nguon_column As Integer, row_start As Integer, row_end As Integer) As String
+            Dim i As Integer
+            For i = row_start To row_end
+                Workbooks(Workbook_check).Worksheets(1).Cells(i + 7, 6).Value = Workbooks(workbook_nguon).Worksheets(1).Cells(i, nguon_column).Value
+            Next i
+End Function
+
+'ham tim vi tri cot trong trong sheet bat ky cua tool
+Function find_cottrong(sheet_name As Integer) As Integer
+            Dim i As Integer
+            i = 1
+            
+            Do While (ThisWorkbook.Worksheets(sheet_name).Cells(1, i).Value <> "")
+                i = i + 1
+            Loop
+                find_cottrong = i
+    
+End Function
+'XOA DU LIEU CU O TOOL.SHEET2 Sau khi thao tac xong O SHEET 2
+Sub xoadulieu_sheet2()
+            ThisWorkbook.Worksheets(2).Activate
+            Columns("A:A").Select
+            Range(Selection, Selection.End(xlToRight)).Select
+            Selection.Delete Shift:=xlUp
+            'XOA DU LIEU CU O TOOL.SHEET2 Sau khi thao tac xong O SHEET 2
+            ThisWorkbook.Worksheets(2).Activate
+            Columns("A:A").Select
+            Range(Selection, Selection.End(xlToRight)).Select
+            Selection.Delete Shift:=xlUp
+End Sub
+'XOA DU LIEU CU O TOOL.SHEET3 Sau khi thao tac xong O SHEET 3
+Sub xoadulieu_sheet3()
+    
+            ThisWorkbook.Worksheets(3).Activate
+            Columns("A:A").Select
+            Range(Selection, Selection.End(xlToRight)).Select
+            Selection.Delete Shift:=xlUp
+            'XOA DU LIEU CU O TOOL.SHEET3 Sau khi thao tac xong O SHEET 3
+            ThisWorkbook.Worksheets(3).Activate
+            Columns("A:A").Select
+            Range(Selection, Selection.End(xlToRight)).Select
+            Selection.Delete Shift:=xlUp
+            
+            ThisWorkbook.Worksheets(1).Activate
+            
+            'MsgBox "ThisWorkbook.Name = " & ThisWorkbook.Name
+End Sub
+    'ham tim kiem cac dong chua gia tri
+    Function FindAll(ByVal rng As Range, ByVal searchTxt As String) As Range
+    Dim foundCell As Range
+    Dim firstAddress
+    Dim rResult As Range
+    With rng
+        Set foundCell = .Find(what:=searchTxt, _
+                              After:=.Cells(.Cells.Count), _
+                              LookIn:=xlValues, _
+                              LookAt:=xlPart, _
+                              SearchOrder:=xlByRows, _
+                              SearchDirection:=xlNext, _
+                              MatchCase:=False)
+        If Not foundCell Is Nothing Then
+            firstAddress = foundCell.Address
+            Do
+                If rResult Is Nothing Then
+                    Set rResult = foundCell
+                Else
+                    Set rResult = Union(rResult, foundCell)
+                End If
+                Set foundCell = .FindNext(foundCell)
+            Loop While Not foundCell Is Nothing And foundCell.Address <> firstAddress
+        End If
+    End With
+
+    Set FindAll = rResult
+End Function
+Function GetFileNames(ByVal FolderPath As String) As Variant
+            Dim Result As Variant
+            Dim i As Integer
+            Dim MyFile As Object
+            Dim MyFSO As Object
+            Dim MyFolder As Object
+            Dim MyFiles As Object
+            Set MyFSO = CreateObject("Scripting.FileSystemObject")
+            Set MyFolder = MyFSO.GetFolder(FolderPath)
+            Set MyFiles = MyFolder.Files
+            ReDim Result(1 To MyFiles.Count)
+            i = 1
+            For Each MyFile In MyFiles
+            Result(i) = MyFile.Name
+            i = i + 1
+            Next MyFile
+            GetFileNames = Result
+End Function
+
+Sub main()
+            Dim file1 As String
+            Dim file2 As String
+            Dim CheckDir_1 As String
+            Dim CheckDir_2 As String
+            Dim Duongdanfolder_1 As String
+            Dim Duongdanfolder_2 As String
+              'Dim Duongdanfile_1 As String
+           ' Dim Duongdanfile_2 As String
+            Application.ScreenUpdating = False
+            Application.DisplayAlerts = False
+                                        
+            'kiem tra xem APP da nhap dung chua
+            
+            'chuoi_App = ThisWorkbook.Sheets(1).TextBox3.Text
+                       
+            'If chuoi_App = "" Then
+               ' MsgBox "ban chua nhap APP"
+               ' End
+            'End If
+            'kiem tra xem APP nhap vao co dau cach hay khong
+            'If InStr(1, chuoi_App, " ") <> 0 Then
+                'MsgBox "ban khong duoc nhap ky tu dau cach"
+               ' End
+            'End If
+            
+            'kiem tra xem file co bi nhap sai hay khong, neu khong thi mo file
+            CheckDir_1 = Dir(ThisWorkbook.Sheets(1).TextBox1.Value, vbDirectory)
+            CheckDir_2 = Dir(ThisWorkbook.Sheets(1).TextBox2.Value, vbDirectory)
+            Duongdanfolder_1 = ThisWorkbook.Sheets(1).TextBox1.Value
+            Duongdanfolder_2 = ThisWorkbook.Sheets(1).TextBox2.Value
+            'truoc khi kiem tra dir de mo file thi kiem tra xem duong dan nhap vao dung chua
+            If (InStr(1, ThisWorkbook.Sheets(1).TextBox2.Value, "手配チェックリスト") = 0) Then
+                MsgBox "file 手配チェックリスト（適用変更） khong ton tai"
+                End
+            End If
+            
+            If (InStr(1, ThisWorkbook.Sheets(1).TextBox1.Value, "PSM") = 0) Then
+                MsgBox "file PSM"
+                End
+            End If
+            
+            If (CheckDir_1 = "") Then
+                MsgBox "file  khong ton tai"
+                End
+                
+            ElseIf (CheckDir_2 = "") Then
+                MsgBox "file khong ton tai"
+                End
+        
+            Else
+          
+                             Duongdanfile_1 = Duongdanfolder_1 + "\" + CheckDir_1 + ".xlsx"
+                             Duongdanfile_2 = Duongdanfolder_2 + "\" + CheckDir_2 + ".xlsx"
+                            Excel.Application.Workbooks.Open (Duongdanfile_1)
+                            Excel.Application.Workbooks.Open (Duongdanfile_2)
+                            Call sapxep
+                            
+                            'Call xoadulieu_sheet2
+                            'Call xoadulieu_sheet3
+                     
+                        End If
+           
+                   
+                    'Workbooks.Open Filename:=ThisWorkbook.Sheets(1).TextBox1.Value
+                    'Workbooks.Open Filename:=ThisWorkbook.Sheets(1).TextBox2.Value
+        
+            
+            'lay link file
+            'Duongdanfile_1 = ThisWorkbook.Sheets(1).TextBox1.Value
+            'Duongdanfile_2 = ThisWorkbook.Sheets(1).TextBox2.Value
+    End Sub
+
+
+  Sub sapxep()
+    
+            Workbook_PSM = tenfile_workbook(Duongdanfile_1, "\")
+            Workbook_check = tenfile_workbook(Duongdanfile_2, "\")
+                      
+            'Copy file Workbook_PSM
+            Dim c As Variant
+            
+            'tim hang cuoi cung cua sheet trong Workbook_現在VSLB
+            'Dim lastrow_Workbook_現在VSLB As Integer
+            
+            'lastrow_Workbook_PSM = findLastRowOfsheet(Workbook_PSM, 1)
+            'MsgBox "lastrow_workbookSIMULATION結果 = " & lastrow_Workbook_現在VSLB
+            
+            'tim hang va cot cua cell Var trong Workbook_現在VSLB
+            Dim Var_row As Integer
+            Dim Var_column As Integer
+            Dim zoneA, zoneB, zoneB1, zoneB2 As Range
+            Dim d As String
+            Dim zoneA_row_start As Integer
+            Dim zoneA_row_end As Integer
+            
+            d = "B-TYPE ASSY"
+Set zoneA = Workbooks(Workbook_PSM).Worksheets(1).Cells.Find(what:=d, LookIn:=xlValues) ' tim tu khoa trong 1 sheet
+
+zoneA_row_start = zoneA.Row
+zoneA_row_end = zoneA_row_start + zoneA.MergeArea.Rows.Count - 1
+            
+             
+            Var_row = Find_row(Workbook_PSM, 1, "B-TYPE ASSY")
+            'MsgBox "Var_row = " & Var_row
+            Var_column = Find_column(Workbook_PSM, 1, "Var")
+            'MsgBox "Var_column = " & Var_column
+           ' copy vao sheet trung gian (sheet2)
+           
+            'zoneA_row_start = zoneA.Row
+'zoneA_row_end = zoneA_row_start + zoneA.MergeArea.Rows.Count - 1
+            
+             'tim cot cua cell DesignerNote va copy du lieu
+           
+          Dim wSh As Worksheet
+Dim foundCells As Range
+Dim a As Integer
+Dim b As String
+Dim var_sosanh As String
+Dim funtion_name As String
+Dim row_end_pase As Integer
+
+'tim kiem vi tri chua keyword de copy vao
+'tim kiem ten funtioncode
+funtion_name = Workbooks(Workbook_PSM).Worksheets(1).Cells(7, 7).Value
+'tim kiem vi tri chua funtioncode
+For Each wSh In Workbooks(Workbook_check).Worksheets
+    Set foundCells = FindAll(wSh.UsedRange, funtion_name)
+    If Not foundCells Is Nothing Then
+        Debug.Print ("Results in sheet '" & wSh.Name & "':")
+        Dim cell As Range
+        For Each cell In foundCells
+       
+        a = cell.Row
+        row_end_pase = a + zoneA.MergeArea.Rows.Count - 1
+         '
+         b = Workbooks(Workbook_check).Worksheets(1).Cells(a + 1, 1).Value
+         If b = "@@@@@ASSY List 1" Then
+         var_sosanh = Workbooks(Workbook_check).Worksheets(1).Cells(a + 4, 4).Value
+        ' c = copy_trunggian(1, Workbook_PSM, Var_column, Var_row, 49)
+        Workbooks(Workbook_check).Worksheets(1).Range("F" & a + 4 & ":F" & a + 4 + zoneA.MergeArea.Rows.Count - 1).Value = Workbooks(Workbook_PSM).Worksheets(1).Range("L" & zoneA_row_start & ":L" & zoneA_row_end).Value
+        
+         ' c = copy_trunggian(6, Workbook_PSM, Var_column, Var_row, 77)
+         Else
+         var_sosanh = ""
+           End If
+         'Range("M&a").Select
+        ' Range(Ma).Select
+            Debug.Print ("The value has been found in cell: " & cell.Address)
+        Next
+         
+    End If
+Next
+                   
+                   
+    'copy dong 1 o sheet2 vao sheet3
+            Workbooks(Workbook_check).Worksheets(1).Activate
+                Range("D78").Select
+                'Range(Selection, Selection.End(xlToRight)).Select
+                Range("D78:F78").Copy
+                Sheets(2).Select
+                Range("D78").Select
+                ActiveSheet.Paste
+            
+            
+            'bien tim vi tri tiep theo de copy trong sheet3
+            Dim vitricopy_tieptheo As Integer
+            vitricopy_tieptheo = 79
+            
+            'bien tim do dai cua 1 VAR
+            Dim khoangcach_1 As Integer
+            Dim khoangcach_2 As Integer
+            
+           Workbooks(Workbook_check).Worksheets(1).Activate
+            Dim j_chay As Integer
+            Dim i As Integer
+            Dim j As Integer
+            
+            j_chay = 79
+            
+            For i = 79 To 89
+                If (Cells(i, 4) <> "") Then
+                    'MsgBox "vitricopy_tieptheo=" & vitricopy_tieptheo
+                    khoangcach_1 = khoangcach(Workbook_check, 1, i, 4, 89)
+                    'MsgBox "khoangcach_1=" & khoangcach_1
+                    For j = j_chay To 84
+                        If (Cells(j, 6) <> "") Then
+                            
+                            khoangcach_2 = khoangcach(Workbook_check, 1, j, 6, 84)
+                            'MsgBox "khoangcach_2=" & khoangcach_2
+                            'MsgBox "vitricot_Var2=" & vitricot_Var2
+                            
+                            If (Cells(i, 4).Value < Cells(j, 6).Value) Then
+                                Worksheets(1).Range(Cells(i, 4), Cells(i + khoangcach_1 - 1, 4)).Copy Destination:=Worksheets(2).Cells(vitricopy_tieptheo, 1)
+                                vitricopy_tieptheo = vitricopy_tieptheo + khoangcach_1
+                                Exit For
+                            
+                            ElseIf (Cells(i, 4).Value = Cells(j, 6).Value) Then
+                                Worksheets(1).Range(Cells(i, 4), Cells(i + khoangcach_1 - 1, 4)).Copy Destination:=Worksheets(2).Cells(vitricopy_tieptheo, 4)
+                                Worksheets(1).Range(Cells(j, 6), Cells(j + khoangcach_2 - 1, 6)).Copy Destination:=Worksheets(2).Cells(vitricopy_tieptheo, 6)
+                                If (khoangcach_1 > khoangcach_2) Then
+                                    vitricopy_tieptheo = vitricopy_tieptheo + khoangcach_1
+                                Else
+                                   ' Worksheets(1).Range(Cells(i, 4), Cells(i + khoangcach_1 - 1, 4)).Copy Destination:=Worksheets(2).Cells(vitricopy_tieptheo, 4)
+                                    vitricopy_tieptheo = vitricopy_tieptheo + khoangcach_2
+                                End If
+                                'MsgBox "vitricopy_tieptheo=" & vitricopy_tieptheo
+                                j_chay = j_chay + khoangcach_2
+                                Exit For
+                            
+                            Else
+                                Worksheets(1).Range(Cells(j, 6), Cells(j + khoangcach_2 - 1, 6)).Copy Destination:=Worksheets(2).Cells(vitricopy_tieptheo, 6)
+                                vitricopy_tieptheo = vitricopy_tieptheo + khoangcach_2
+                                j_chay = j_chay + khoangcach_2
+                            End If
+                            
+                        End If
+                    
+                    Next j
+                    If (i = 89) And (j < 84) Then
+                            Worksheets(1).Range(Cells(j + khoangcach_2, 6), Cells(84, 6)).Copy Destination:=Worksheets(2).Cells(vitricopy_tieptheo, 6)
+                    
+                    ElseIf (i < 89) And (j = 84 + 1) Then
+                    
+                        Worksheets(1).Range(Cells(i, 4), Cells(89, 4)).Copy Destination:=Worksheets(2).Cells(vitricopy_tieptheo, 4)
+                        
+                        'chay tiep i
+                        
+                        If (Cells(i, 4).Value < Cells(j_chay - khoangcach_2, 6).Value) Then
+                         Worksheets(1).Range(Cells(i, 4), Cells(i + khoangcach_1 - 1, 4)).Copy Destination:=Worksheets(2).Cells(vitricopy_tieptheo, 1)
+                         vitricopy_tieptheo = vitricopy_tieptheo + khoangcach_1
+                         ElseIf (Cells(i, 4).Value = Cells(j_chay - khoangcach_2, 6).Value) Then
+                         
+                        Worksheets(1).Range(Cells(i, 4), Cells(i + khoangcach_1 - 1, 4)).Copy Destination:=Worksheets(2).Cells(vitricopy_tieptheo, 4)
+                                Worksheets(1).Range(Cells(j, 6), Cells(j + khoangcach_2 - 1, 6)).Copy Destination:=Worksheets(2).Cells(vitricopy_tieptheo, 6)
+                                If (khoangcach_1 > khoangcach_2) Then
+                                    vitricopy_tieptheo = vitricopy_tieptheo + khoangcach_1
+                                Else
+                         vitricopy_tieptheo = vitricopy_tieptheo + khoangcach_2
+                                End If
+                        
+                         End If
+                            
+                        End If
+                        
+                    End If
+               
+            Next i
+               
+                   
+                   
+                   
+                   
+                   
+End Sub
+
+            
+
+
+
+
+
+
+
+
+
+
+
+      
+    
+
