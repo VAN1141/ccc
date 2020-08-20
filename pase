@@ -348,7 +348,7 @@ For Each wSh In Workbooks(Workbook_check).Worksheets
         For Each cell In foundCells
        
         a = cell.Row
-        row_end_pase = a + zoneA.MergeArea.Rows.Count - 1
+        row_end_pase = a + 4 + zoneA.MergeArea.Rows.Count - 1
          '
          b = Workbooks(Workbook_check).Worksheets(1).Cells(a + 1, 1).Value
          If b = "@@@@@ASSY List 1" Then
@@ -356,32 +356,24 @@ For Each wSh In Workbooks(Workbook_check).Worksheets
         ' c = copy_trunggian(1, Workbook_PSM, Var_column, Var_row, 49)
         Workbooks(Workbook_check).Worksheets(1).Range("F" & a + 4 & ":F" & a + 4 + zoneA.MergeArea.Rows.Count - 1).Value = Workbooks(Workbook_PSM).Worksheets(1).Range("L" & zoneA_row_start & ":L" & zoneA_row_end).Value
         
-         ' c = copy_trunggian(6, Workbook_PSM, Var_column, Var_row, 77)
-         Else
-         var_sosanh = ""
-           End If
-         'Range("M&a").Select
-        ' Range(Ma).Select
-            Debug.Print ("The value has been found in cell: " & cell.Address)
-        Next
-         
-    End If
-Next
-                   
-                   
+                
+            Dim dongdautien_thunhat As Integer
+            Dim dongcuoicung As Integer
+            dongdautien_thunhat = a + 4
+           
     'copy dong 1 o sheet2 vao sheet3
             Workbooks(Workbook_check).Worksheets(1).Activate
-                Range("D78").Select
+                Range("D" & a + 4).Select
                 'Range(Selection, Selection.End(xlToRight)).Select
-                Range("D78:F78").Copy
+               Range("D" & a + 4 & ":F" & a + 4).Copy
                 Sheets(2).Select
-                Range("D78").Select
+               Range("D" & a + 4).Select
                 ActiveSheet.Paste
             
             
             'bien tim vi tri tiep theo de copy trong sheet3
             Dim vitricopy_tieptheo As Integer
-            vitricopy_tieptheo = 79
+            vitricopy_tieptheo = dongdautien_thunhat
             
             'bien tim do dai cua 1 VAR
             Dim khoangcach_1 As Integer
@@ -392,17 +384,17 @@ Next
             Dim i As Integer
             Dim j As Integer
             
-            j_chay = 79
+            j_chay = dongdautien_thunhat
             
-            For i = 79 To 89
+            For i = dongdautien_thunhat To row_end_pase
                 If (Cells(i, 4) <> "") Then
                     'MsgBox "vitricopy_tieptheo=" & vitricopy_tieptheo
-                    khoangcach_1 = khoangcach(Workbook_check, 1, i, 4, 89)
+                    khoangcach_1 = khoangcach(Workbook_check, 1, i, 4, row_end_pase)
                     'MsgBox "khoangcach_1=" & khoangcach_1
-                    For j = j_chay To 84
+                    For j = j_chay To row_end_pase
                         If (Cells(j, 6) <> "") Then
                             
-                            khoangcach_2 = khoangcach(Workbook_check, 1, j, 6, 84)
+                            khoangcach_2 = khoangcach(Workbook_check, 1, j, 6, row_end_pase)
                             'MsgBox "khoangcach_2=" & khoangcach_2
                             'MsgBox "vitricot_Var2=" & vitricot_Var2
                             
@@ -433,12 +425,12 @@ Next
                         End If
                     
                     Next j
-                    If (i = 89) And (j < 84) Then
-                            Worksheets(1).Range(Cells(j + khoangcach_2, 6), Cells(84, 6)).Copy Destination:=Worksheets(2).Cells(vitricopy_tieptheo, 6)
+                    If (i = row_end_pase) And (j < row_end_pase) Then
+                            Worksheets(1).Range(Cells(j + khoangcach_2, 6), Cells(row_end_pase, 6)).Copy Destination:=Worksheets(2).Cells(vitricopy_tieptheo, 6)
                     
-                    ElseIf (i < 89) And (j = 84 + 1) Then
+                    ElseIf (i < row_end_pase) And (j = row_end_pase + 1) Then
                     
-                        Worksheets(1).Range(Cells(i, 4), Cells(89, 4)).Copy Destination:=Worksheets(2).Cells(vitricopy_tieptheo, 4)
+                        Worksheets(1).Range(Cells(i, 4), Cells(row_end_pase, 4)).Copy Destination:=Worksheets(2).Cells(vitricopy_tieptheo, 4)
                         
                         'chay tiep i
                         
@@ -462,6 +454,20 @@ Next
                     End If
                
             Next i
+        
+        
+         ' c = copy_trunggian(6, Workbook_PSM, Var_column, Var_row, 77)
+         Else
+         var_sosanh = ""
+           End If
+         'Range("M&a").Select
+        ' Range(Ma).Select
+            Debug.Print ("The value has been found in cell: " & cell.Address)
+        Next
+         
+    End If
+Next
+           
                
                    
                    
