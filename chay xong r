@@ -342,8 +342,22 @@ Dim sheet_count As Integer
             Var_column = Find_column(Workbook_PSM, sheet_count, "Var")
             
             'tim vung dezingnote
-            Dim denote_col As Integer
-            denote_col = Find_column(Workbook_PSM, sheet_count, "Designer Note")
+            Dim denote_col_psm As Integer
+            Dim part_no_col_psm As Integer
+            Dim part_name_col_psm As Integer
+            Dim pc_col_psm As Integer
+            
+            denote_col_psm = Find_column(Workbook_PSM, sheet_count, "Designer Note")
+            part_no_col_psm = Find_column(Workbook_PSM, sheet_count, "Part No.")
+            part_name_col_psm = Find_column(Workbook_PSM, sheet_count, "Part Name")
+            pc_col_psm = Find_column(Workbook_PSM, sheet_count, "PC")
+            'khoang cach cot
+            Dim kc_denote, kc_part_no, kc_part_name, kc_pc As Integer
+            kc_denote = denote_col_psm - Var_column
+            kc_part_no = part_no_col_psm - Var_column
+            kc_part_name = part_name_col_psm - Var_column
+            kc_pc = pc_col_psm - Var_column
+            'ket thuc tim cot
             'MsgBox "Var_column = " & Var_column
             ' copy vao sheet trung gian (sheet2)
 
@@ -465,13 +479,25 @@ Dim sheet_count As Integer
                                                 khoangcach_2 = khoangcach(Workbook_check, 1, j, vitricot_var2, row_end_pase)
                                                 dongsosanh = j - 1
                                                     For i = dongdautien_thunhat To luu_dongcuoicung
-                                                        If (Cells(i, 4).Value = Cells(j, vitricot_var2).Value) Then
-                                                            dongsosanh = dongsosanh + 1
-                                                                If (Cells(i, 7).Value <> Cells(dongsosanh, vitricot_var2 + 10).Value) Then
-                                                                    Cells(i, 7).Interior.ColorIndex = 37
-                                                                End If
-                                                                
-                                                        End If
+                                                        If (Cells(i, 4)) <> "" Then
+                                                            If (Cells(i, 4).Value = Cells(j, vitricot_var2).Value) Then
+                                                                dongsosanh = dongsosanh + 1
+                                                                    If (Cells(i, 7).Value <> Cells(dongsosanh, vitricot_var2 + kc_denote).Value) Then
+                                                                        Cells(i, 7).Interior.ColorIndex = 37
+                                                                    End If
+                                                                    If (Cells(i, 26).Value <> Cells(dongsosanh, vitricot_var2 + kc_part_no).Value) Then
+                                                                        Cells(i, 26).Interior.ColorIndex = 37
+                                                                    End If
+                                                                    If (Cells(i, 33).Value <> Cells(dongsosanh, vitricot_var2 + kc_part_name).Value) Then
+                                                                        Cells(i, 33).Interior.ColorIndex = 37
+                                                                    End If
+                                                                    If (Cells(i, 54).Value <> Cells(dongsosanh, vitricot_var2 + kc_pc).Value) Then
+                                                                        Cells(i, 54).Interior.ColorIndex = 37
+                                                                    End If
+                                                                    
+                                                                     'Dim kc_denote, kc_part_no, kc_part_name, kc_pc As Integer
+                                                            End If
+                                                          End If
                                                     Next i
                                                     
                                             End If
