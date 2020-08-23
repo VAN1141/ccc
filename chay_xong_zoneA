@@ -1,3 +1,4 @@
+
 Option Explicit
             Dim Duongdanfile_1 As String
             Dim Duongdanfile_2 As String
@@ -79,8 +80,12 @@ End Function
 'ham do khoang cach giua 2 o co du lieu
 Function khoangcach(workbook_name As String, sheet_name As Integer, ByVal row_start As Integer, column As Integer, lastrow As Integer) As Integer
             Dim a, b, L As Integer
+            Dim var1 As Integer
+            
             a = row_start
+            var1 = Workbooks(workbook_name).Worksheets(sheet_name).Cells(row_start, column).Value
             row_start = row_start + 1
+            
             Do While (Workbooks(workbook_name).Worksheets(sheet_name).Cells(row_start, column).Value = "")
                 If (row_start <= lastrow) Then
                     row_start = row_start + 1
@@ -112,7 +117,7 @@ Function get_range_App(chuoi_name As String) As Integer
             vitri_ngancach = InStr(1, chuoi_name, "-")
             If vitri_ngancach <> 0 Then
                 chuoi_name_1 = Left(chuoi_name, vitri_ngancach - 1)
-                chuoi_name_1 = Right(chuoi_name, dodai_chuoi - vitri_ngancach)                          'まだだ・・・・・・・・・・・・・・・・・・・・・・・・・・・・・・
+                chuoi_name_1 = Right(chuoi_name, dodai_chuoi - vitri_ngancach)                          '???······························
                 
             Else
                 get_chuoiname = chuoi_name
@@ -139,22 +144,24 @@ Function find_cottrong(sheet_name As Integer) As Integer
     
 End Function
 'XOA DU LIEU CU O TOOL.SHEET2 Sau khi thao tac xong O SHEET 2
-Sub xoadulieu_sheet2()
-            ThisWorkbook.Worksheets(2).Activate
-            Columns("A:A").Select
-            Range(Selection, Selection.End(xlToRight)).Select
-            Selection.Delete Shift:=xlUp
+Function xoadulieu_sheet2(workbook_xoa As String, cot_batdau_xoa As Integer, cot_cuoicung As Integer, hang_cuoicung As Integer)
+           ' ThisWorkbook.Worksheets(2).Activate
+           ' Columns("A:A").Select
+            'Range(Selection, Selection.End(xlToRight)).Select
+            'Selection.Delete Shift:=xlUp
             'XOA DU LIEU CU O TOOL.SHEET2 Sau khi thao tac xong O SHEET 2
-            ThisWorkbook.Worksheets(2).Activate
-            Columns("A:A").Select
-            Range(Selection, Selection.End(xlToRight)).Select
-            Selection.Delete Shift:=xlUp
-End Sub
+            Workbooks(workbook_xoa).Worksheets(1).Activate
+           'Cells(1, cot_batdau_xoa).Select
+           ' Range(Selection, Selection.End(xlToRight)).Select
+            'Selection.EntireColumnDelete Shift:=xlUp
+              Range(Cells(1, cot_batdau_xoa), Cells(hang_cuoicung, cot_cuoicung)).Select
+   Selection.EntireColumn.Delete
+End Function
 'XOA DU LIEU CU O TOOL.SHEET3 Sau khi thao tac xong O SHEET 3
 Sub xoadulieu_sheet3()
     
             ThisWorkbook.Worksheets(3).Activate
-            'Columns("A:A").Select
+            Columns("A:A").Select
             Range(Selection, Selection.End(xlToRight)).Select
             Selection.Delete Shift:=xlUp
             'XOA DU LIEU CU O TOOL.SHEET3 Sau khi thao tac xong O SHEET 3
@@ -246,8 +253,8 @@ Sub main()
             Duongdanfolder_1 = ThisWorkbook.Sheets(1).TextBox1.Value
             Duongdanfolder_2 = ThisWorkbook.Sheets(1).TextBox2.Value
             'truoc khi kiem tra dir de mo file thi kiem tra xem duong dan nhap vao dung chua
-            If (InStr(1, ThisWorkbook.Sheets(1).TextBox2.Value, "手配チェックリスト") = 0) Then
-                MsgBox "file 手配チェックリスト（適用変更） khong ton tai"
+            If (InStr(1, ThisWorkbook.Sheets(1).TextBox2.Value, "CHECK") = 0) Then
+                MsgBox "file CHECK khong ton tai"
                 End
             End If
             
@@ -288,20 +295,21 @@ Sub main()
     End Sub
 
 
-Sub sapxep()
-    Workbook_PSM = tenfile_workbook(Duongdanfile_1, "\")
-    Workbook_check = tenfile_workbook(Duongdanfile_2, "\")
-
-'Copy file Workbook_PSM
+  Sub sapxep()
+    
+            Workbook_PSM = tenfile_workbook(Duongdanfile_1, "\")
+            Workbook_check = tenfile_workbook(Duongdanfile_2, "\")
+                      
+           'Copy file Workbook_PSM
 Dim c As Variant
 
-'tim hang cuoi cung cua sheet trong Workbook_現在VSLB
-'Dim lastrow_Workbook_現在VSLB As Integer
+'tim hang cuoi cung cua sheet trong Workbook_??VSLB
+'Dim lastrow_Workbook_??VSLB As Integer
 
 'lastrow_Workbook_PSM = findLastRowOfsheet(Workbook_PSM, 1)
-'MsgBox "lastrow_workbookSIMULATION結果 = " & lastrow_Workbook_現在VSLB
+'MsgBox "lastrow_workbookSIMULATION?? = " & lastrow_Workbook_??VSLB
 
-'tim hang va cot cua cell Var trong Workbook_現在VSLB
+'tim hang va cot cua cell Var trong Workbook_??VSLB
 Dim Var_row As Integer
 Dim Var_column As Integer
 Dim zoneA, zoneB, zoneB1, zoneB2 As Range
@@ -333,7 +341,23 @@ Dim sheet_count As Integer
             'MsgBox "Var_row = " & Var_row
             Var_column = Find_column(Workbook_PSM, sheet_count, "Var")
             
+            'tim vung dezingnote
+            Dim denote_col_psm As Integer
+            Dim part_no_col_psm As Integer
+            Dim part_name_col_psm As Integer
+            Dim pc_col_psm As Integer
             
+            denote_col_psm = Find_column(Workbook_PSM, sheet_count, "Designer Note")
+            part_no_col_psm = Find_column(Workbook_PSM, sheet_count, "Part No.")
+            part_name_col_psm = Find_column(Workbook_PSM, sheet_count, "Part Name")
+            pc_col_psm = Find_column(Workbook_PSM, sheet_count, "PC")
+            'khoang cach cot
+            Dim kc_denote, kc_part_no, kc_part_name, kc_pc As Integer
+            kc_denote = denote_col_psm - Var_column
+            kc_part_no = part_no_col_psm - Var_column
+            kc_part_name = part_name_col_psm - Var_column
+            kc_pc = pc_col_psm - Var_column
+            'ket thuc tim cot
             'MsgBox "Var_column = " & Var_column
             ' copy vao sheet trung gian (sheet2)
 
@@ -391,29 +415,30 @@ Dim sheet_count As Integer
                                      ' c = copy_trunggian(1, Workbook_PSM, Var_column, Var_row, 49)
                                      Dim cot_lastcopy_psm As Integer
                                      Dim cot_lastpase_check As Integer
+                                     Dim hang_cuoicung As Integer
+                                     
                                      'cot cuoi cung cua psm 1
                                      cot_lastcopy_psm = Workbooks(Workbook_PSM).Worksheets(sheet_count).Cells(zoneA_row_start, Columns.Count).End(xlToLeft).column
                                      'cot dau tien copy vao
                                      cot_lastpase_check = Workbooks(Workbook_check).Worksheets(1).Cells(a + 4, Columns.Count).End(xlToLeft).column
-                                     
-                                       ' Workbooks(Workbook_check).Worksheets(1).Cells(a + 4, cot_lastpase_check + 1).Value = Workbooks(Workbook_PSM).Worksheets(sheet_count).Range(Cells(zoneA_row_start, 12), Cells(zoneA_row_end, cot_lastcopy_psm)).Value
-'Workbooks(Workbook_PSM).Worksheets(sheet_count).Range(Cells(zoneA_row_start, 12), Cells(zoneA_row_end, cot_lastcopy_psm)).Copy Destination:=Workbooks(Workbook_check).Worksheets(1).Cells(a + 4, cot_lastpase_check + 1)
-                                        Workbooks(Workbook_check).Worksheets(1).Cells(a + 4, cot_lastpase_check + 1) = Workbooks(Workbook_PSM).Worksheets(sheet_count).Range(Cells(zoneA_row_start, 12), Cells(zoneA_row_end, cot_lastcopy_psm))
-                                        
-                                        
+                                     'tim hang cuoi cung
+                                     hang_cuoicung = Workbooks(Workbook_check).Worksheets(1).Cells(Rows.Count, cot_lastpase_check + 1).End(xlUp).Row
+                                      ' Workbooks(Workbook_check).Worksheets(1).Range("DP"&a + 4 ":LI"&).Value = Workbooks(Workbook_PSM).Worksheets(sheet_count).Range(Cells(zoneA_row_start, 12), Cells(zoneA_row_end, cot_lastcopy_psm)).Value
+'Workbooks(Workbook_PSM).Worksheets(sheet_count).Range(Cells(71, 12), Cells(75, 136)).Copy Destination:=Workbooks(Workbook_check).Worksheets(1).Cells(118, a + 4)
+                                        'Workbooks(Workbook_check).Worksheets(1).Cells(a + 4, cot_lastpase_check + 1) = Workbooks(Workbook_PSM).Worksheets(sheet_count).Range(Cells(zoneA_row_start, 12), Cells(zoneA_row_end, cot_lastcopy_psm))
+                                'Workbooks(Workbook_PSM).Worksheets(sheet_count).Range("L" & zoneA_row_start & ":L" & zoneA_row_end).Copy Destination:=Workbooks(Workbook_check).Worksheets(1).Cells(a + 4, cot_lastpase_check + 1)
+                                'copy xang sheet khac
+                                
+                                With Workbooks(Workbook_PSM).Worksheets(sheet_count)
+                                     .Range(.Cells(zoneA_row_start, 12), .Cells(zoneA_row_end, cot_lastcopy_psm)).Copy Destination:=Workbooks(Workbook_check).Worksheets(1).Cells(a + 4, cot_lastpase_check + 1)
+                                     End With
                                         Dim dongdautien_thunhat As Integer
                                         Dim dongcuoicung As Integer
                                         dongdautien_thunhat = a + 5
 
                                         'copy dong 1 o sheet2 vao sheet3
-                                        Workbooks(Workbook_check).Worksheets(1).Activate
-                                        Range("D" & a + 4).Select
-                                        'Range(Selection, Selection.End(xlToRight)).Select
-                                        Range("D" & a + 4 & ":F" & a + 4).Copy
-                                        Sheets(2).Select
-                                        Range("D" & a + 4).Select
-                                        ActiveSheet.Paste
-
+                                        
+                                       
 
                                         'bien tim vi tri tiep theo de copy trong sheet3
                                         Dim vitricopy_tieptheo As Integer
@@ -423,72 +448,63 @@ Dim sheet_count As Integer
                                         Dim khoangcach_1 As Integer
                                         Dim khoangcach_2 As Integer
 
-                                        Workbooks(Workbook_check).Worksheets(1).Activate
+                                       
                                         Dim j_chay As Integer
                                         Dim i As Integer
                                         Dim j As Integer
                                         Dim vitricot_var2 As Integer
                                         
-'
+                                    Workbooks(Workbook_check).Worksheets(1).Activate
                                         Dim vitricuoicung_2 As Integer
+                                        Dim dongsosanh As Integer
+                                        
                                         vitricuoicung_2 = Workbooks(Workbook_check).Worksheets(1).Cells(a + 4, Columns.Count).End(xlToLeft).column
                                         vitricot_var2 = cot_lastpase_check + 1
-                                        j_chay = dongdautien_thunhat
+                                        'copy dong dau tien
+                                        
+                                        Workbooks(Workbook_check).Worksheets(1).Range("D" & a + 4).Select
+                                        'Range(Selection, Selection.End(xlToRight)).Select
+                                        Range(Cells(a + 4, 4), Cells(a + 4, vitricuoicung_2)).Copy
+                                        Sheets(2).Select
+                                        Range(Cells(a + 4, 4), Cells(a + 4, vitricuoicung_2)).Select
+                                        ActiveSheet.Paste
 
-                                            For i = dongdautien_thunhat To luu_dongcuoicung
-                                                If (Cells(i, 4) <> "") Then
-                                                    'MsgBox "vitricopy_tieptheo=" & vitricopy_tieptheo
-                                                    khoangcach_1 = khoangcach(Workbook_check, 1, i, 4, luu_dongcuoicung)
-                                                    'MsgBox "khoangcach_1=" & khoangcach_1
-                                                        For j = j_chay To row_end_pase
-                                                            If (Cells(j, vitricot_var2) <> "") Then
-
-                                                                khoangcach_2 = khoangcach(Workbook_check, 1, j, vitricot_var2, row_end_pase)
-                                                        'MsgBox "khoangcach_2=" & khoangcach_2
-                                                        'MsgBox "vitricot_Var2=" & vitricot_Var2
-
-                                                            If (Cells(i, 4).Value < Cells(j, vitricot_var2).Value) Then
-                                                                Worksheets(1).Range(Cells(i, 4), Cells(i + khoangcach_1 - 1, cot_lastpase_check)).Copy Destination:=Worksheets(2).Cells(vitricopy_tieptheo, 4)
-                                                                vitricopy_tieptheo = vitricopy_tieptheo + khoangcach_1
-                                                                Exit For
-
-                                                                    ElseIf (Cells(i, 4).Value = Cells(j, vitricot_var2).Value) Then
-                                                                        Worksheets(1).Range(Cells(i, 4), Cells(i + khoangcach_1 - 1, cot_lastpase_check)).Copy Destination:=Worksheets(2).Cells(vitricopy_tieptheo, 4)
-                                                                        Worksheets(1).Range(Cells(j, vitricot_var2), Cells(j + khoangcach_2 - 1, vitricuoicung_2)).Copy Destination:=Worksheets(2).Cells(vitricopy_tieptheo, vitricot_var2)
-                                                                            If (khoangcach_1 > khoangcach_2) Then
-                                                                                vitricopy_tieptheo = vitricopy_tieptheo + khoangcach_1
-                                                                             Else
-                                                                             'copy vao dong cua khoang cach 1
-                                                                               ' Worksheets(1).Range(Cells(i, 4), Cells(i + khoangcach_1 - 1, 4)).Copy Destination:=Worksheets(2).Cells(vitricopy_tieptheo, 4)
-                                                                                vitricopy_tieptheo = vitricopy_tieptheo + khoangcach_2
-                                                                            End If
-                                                                'MsgBox "vitricopy_tieptheo=" & vitricopy_tieptheo
-                                                                        j_chay = j_chay + khoangcach_2
-                                                                        Exit For
-
-                                                                    Else
-                                                                        Worksheets(1).Range(Cells(j, vitricot_var2), Cells(j + khoangcach_2 - 1, vitricuoicung_2)).Copy Destination:=Worksheets(2).Cells(vitricopy_tieptheo, vitricot_var2)
-                                                                        vitricopy_tieptheo = vitricopy_tieptheo + khoangcach_2
-                                                                        j_chay = j_chay + khoangcach_2
+                                        
+                                         Workbooks(Workbook_check).Worksheets(1).Activate
+                                         'bat dau so sanh to mau
+                                         j_chay = dongdautien_thunhat
+                                         
+                                         For j = j_chay To row_end_pase
+                                            If (Cells(j, vitricot_var2) <> "") Then
+                                                khoangcach_2 = khoangcach(Workbook_check, 1, j, vitricot_var2, row_end_pase)
+                                                dongsosanh = j - 1
+                                                    For i = dongdautien_thunhat To luu_dongcuoicung
+                                                        If (Cells(i, 4)) <> "" Then
+                                                            If (Cells(i, 4).Value = Cells(j, vitricot_var2).Value) Then
+                                                                dongsosanh = dongsosanh + 1
+                                                                    If (Cells(i, 7).Value <> Cells(dongsosanh, vitricot_var2 + kc_denote).Value) Then
+                                                                        Cells(i, 7).Interior.ColorIndex = 37
                                                                     End If
-
+                                                                    If (Cells(i, 26).Value <> Cells(dongsosanh, vitricot_var2 + kc_part_no).Value) Then
+                                                                        Cells(i, 26).Interior.ColorIndex = 37
+                                                                    End If
+                                                                    If (Cells(i, 33).Value <> Cells(dongsosanh, vitricot_var2 + kc_part_name).Value) Then
+                                                                        Cells(i, 33).Interior.ColorIndex = 37
+                                                                    End If
+                                                                    If (Cells(i, 54).Value <> Cells(dongsosanh, vitricot_var2 + kc_pc).Value) Then
+                                                                        Cells(i, 54).Interior.ColorIndex = 37
+                                                                    End If
+                                                                    
+                                                                     'Dim kc_denote, kc_part_no, kc_part_name, kc_pc As Integer
                                                             End If
-
-                                                        Next j
-                                                If (i = luu_dongcuoicung) And (j < row_end_pase) Then
-                                                    Worksheets(1).Range(Cells(j + khoangcach_2, vitricot_var2), Cells(row_end_pase, vitricuoicung_2)).Copy Destination:=Worksheets(2).Cells(vitricopy_tieptheo, vitricot_var2)
-
-                                                    ElseIf (i < luu_dongcuoicung) And (j = row_end_pase + 1) Then
-    
-                                                        Worksheets(1).Range(Cells(i, 4), Cells(luu_dongcuoicung, cot_lastpase_check)).Copy Destination:=Worksheets(2).Cells(vitricopy_tieptheo, 4)
-    
+                                                          End If
+                                                    Next i
                                                     
-                                                    End If
-
-                                                End If
-
-                                            Next i
-
+                                            End If
+                                            j_chay = j_chay + khoangcach_2
+                                         Next j
+                                        'ket thuc
+'tien hanh so sanh
 
                                 ' c = copy_trunggian(6, Workbook_PSM, Var_column, Var_row, 77)
                                 Exit For
@@ -502,29 +518,15 @@ Dim sheet_count As Integer
 
                     End If
             Next
+Dim hang_cuoicung_sheet2 As Integer
 
+'tim hang cuoi cung sheet moi
+'hang_cuoicung = Workbooks(Workbook_check).Worksheets(1).Cells(Rows.Count, cot_lastpase_check + 1).End(xlUp).Row
 
+'ket thuc cop mot sheet
     Next sheet_count
 
-                   
-                   
+       Call xoadulieu_sheet2(Workbook_check, cot_lastpase_check + 1, vitricuoicung_2, hang_cuoicung)
+    
                    
 End Sub
-
-            
-
-
-
-
-
-
-
-
-
-
-
-      
-    
-
-
-
