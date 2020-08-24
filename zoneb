@@ -646,4 +646,34 @@ Dim hang_cuoicung_sheet2 As Integer
     
                    
 End Sub
-
+ 
+                                            'bat dau so sanh to mau
+                                            
+                                               Dim so_phan_tu As Integer
+                                               
+                                                Dim var_no_row() As Integer
+                                                Dim so_spec_code() As Integer
+                                                Dim gia_tri() As Integer
+                                                
+                                                Dim dong_bat_dau_phantu As Integer
+                                                Dim cot_start_zoneb As Integer
+                                                'tim cot dat tien
+                                                cot_start_zoneb = cot_lastpase_check_zoneB + 1
+                                                dong_bat_dau_phantu = a + 21
+                                                dong_ket_thu_phan_tu = 0
+                                                so_phan_tu = 0
+                                                Do While dong_ket_thuc_phan_tu < row_end_pase_zoneB
+                                                    For i_zoneB = dong_bat_dau_phantu To row_end_pase_zoneB
+                                                        If (Cells(i, cot_start_zoneb) <> "") Then
+                                                            dong_ket_thuc_phan_tu = i
+                                                            so_phan_tu = so_phan_tu + 1
+                                                            
+                                                            
+                                                            
+                                                        End If
+                                                        
+                                                    Next i_zoneB
+                                                    
+                                                Loop
+                                                
+                                            'ket thuc so sanh to mau
