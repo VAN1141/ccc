@@ -1,0 +1,41 @@
+end_range=120 / di tim dong var. no.
+tim theo cot "O"
+tim dc dong row_varian
+/khai bao' 2 mang 
+so_phan_tu as interger
+dim APP_row () interger
+dim Model_no() interger
+dim gia_tri() interger
+
+
+so_phan_tu=0
+row_start = row_varian+1
+row_end=0
+
+do while row_end < end_range+1
+	for i=row_start+1 to end_range
+				 if cells(i,8)<>"" then 
+							row_end=i
+							
+							so_phan_tu=so_phan_tu+1
+							Redim Preserve APP_row (so_phan_tu)
+							Redim Preserve Model_no (so_phan_tu)
+							Redim Preserve gia_tri (so_phan_tu)
+							gia_tri (so_phan_tu)=cells(i,8)
+							APP_row (so_phan_tu)=row_start
+							Model_no (so_phan_tu)=row_end-row_start 
+							row_start=row_end
+							exit for
+					
+				 endif
+	 next
+loop
+
+for i=1 to so_phan_tu
+	row_start = 661
+	row_end=0
+   for k=1 to Model_no (so_phan_tu)
+		for j=row_start to end_range
+	
+			if giatri(i)=cells(j,7) then sosanh
+		
