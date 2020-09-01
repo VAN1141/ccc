@@ -10,7 +10,7 @@ Option Explicit
 Function tenfile_workbook(file_duongdan_workbook As String, key_work As String)
             Dim dodai_duongdan As Integer
             Dim vitrixuathien_keywork As Integer
-            
+
             dodai_duongdan = Len(file_duongdan_workbook)
             'vitrixuathien_keywork = InStr(1, file_duongdan_workbook, key_work)
             vitrixuathien_keywork = InStrRev(file_duongdan_workbook, key_work, -1)
@@ -22,7 +22,7 @@ Function Find_row(workbook_name As String, sheet_name As Integer, key_word As St
 
             Dim row_kekka As Integer
             Dim c As Variant
-            
+
             With Workbooks(workbook_name).Worksheets(sheet_name).Cells
                     Set c = .Find(key_word, LookIn:=xlValues, LookAt:=xlWhole)
                     If Not c Is Nothing Then
@@ -35,11 +35,11 @@ End Function
 
 'ham tim kiem cot cua 1 cell
 Function Find_column(workbook_name As String, sheet_name As Integer, key_word As String) As Integer
-        
+
             'Dim row_kekka As Integer
             Dim column_kekka As Integer
             Dim c As Variant
-            
+
             With Workbooks(workbook_name).Worksheets(sheet_name).Cells
                     Set c = .Find(key_word, LookIn:=xlValues, LookAt:=xlWhole)
                     If Not c Is Nothing Then
@@ -54,8 +54,8 @@ Function Find_column_2(workbook_name As String, sheet_name As Integer, ByVal key
             'Dim row_kekka As Integer
             Dim column_kekka As Integer
             Dim c As Object
-            
-            
+
+
             With Workbooks(workbook_name).Worksheets(sheet_name).Rows(ten_row)
                     Set c = .Find(What:=key_word, After:=cell_name, LookIn:=xlValues, LookAt:=xlWhole, SearchOrder:=xlByRows, SearchDirection:=xlNext)
                     If Not c Is Nothing Then
@@ -71,7 +71,7 @@ End Function
 'ham tim hang cuoi cung cua sheet
 Function findLastRowOfsheet(workbook_name As String, sheet_name As Integer) As Integer
             Dim lastrow As Integer
-        
+
             lastrow = Workbooks(workbook_name).Worksheets(sheet_name).UsedRange.Rows(Workbooks(workbook_name).Worksheets(sheet_name).UsedRange.Rows.Count).Row
             findLastRowOfsheet = lastrow
 
@@ -87,18 +87,35 @@ Function khoangcach(workbook_name As String, sheet_name As Integer, ByVal row_st
                 Else
                     Exit Do
                 End If
-                
+
             Loop
             b = row_start
             L = b - a
             khoangcach = L
-    
+
+End Function
+Function khoangcach_vung_1(workbook_name As String, sheet_name As Integer, ByVal row_start As Integer, column As Integer, lastrow As Integer) As Integer
+            Dim a, b, L As Integer
+            a = row_start
+            row_start = row_start + 1
+            Do While (IsNumeric(Workbooks(workbook_name).Worksheets(sheet_name).Cells(row_start, column).Value) = False)
+                If (row_start <= lastrow) Then
+                    row_start = row_start + 1
+                Else
+                    Exit Do
+                End If
+
+            Loop
+            b = row_start
+            L = b - a
+            khoangcach_vung_1 = L
+
 End Function
 
 'so sanh gia tri cua 2 cell
 Function sosanh_value(workbook_name_1 As String, workbook_name_2 As String, row_1 As Integer, column_1 As Integer, row_2 As Integer, column_2 As Integer) As Integer
             Dim a, b As Integer
-            
+
             a = Workbooks(workbook_name_1).Worksheets(1).Cells(row_1, column_1).Value
             b = Workbooks(workbook_name_2).Worksheets(1).Cells(row_2, column_2).Value
             sosanh_value = a - b
@@ -107,13 +124,13 @@ End Function
 Function get_range_App(chuoi_name As String) As Integer
             Dim As chuoi_name_1, chuoi_name_2 As String
             Dim vitri_ngancach, dodai_chuoi As Integer
-            
+
             dodai_chuoi = Len(chuoi_name)
             vitri_ngancach = InStr(1, chuoi_name, "-")
             If vitri_ngancach <> 0 Then
                 chuoi_name_1 = Left(chuoi_name, vitri_ngancach - 1)
-                chuoi_name_1 = Right(chuoi_name, dodai_chuoi - vitri_ngancach)                          'まだだ・・・・・・・・・・・・・・・・・・・・・・・・・・・・・・
-                
+                chuoi_name_1 = Right(chuoi_name, dodai_chuoi - vitri_ngancach)                          '???・・・・・・・・・・・・・・・・・・・・・・・・・・・・・・
+
             Else
                 get_chuoiname = chuoi_name
             End If
@@ -131,12 +148,12 @@ End Function
 Function find_cottrong(sheet_name As Integer) As Integer
             Dim i As Integer
             i = 1
-            
+
             Do While (ThisWorkbook.Worksheets(sheet_name).Cells(1, i).Value <> "")
                 i = i + 1
             Loop
                 find_cottrong = i
-    
+
 End Function
 'XOA DU LIEU CU O TOOL.SHEET2 Sau khi thao tac xong O SHEET 2
 'XOA DU LIEU CU O TOOL.SHEET2 Sau khi thao tac xong O SHEET 2
@@ -155,7 +172,7 @@ Function xoadulieu_sheet2(workbook_xoa As String, cot_batdau_xoa As Integer, cot
 End Function
 'XOA DU LIEU CU O TOOL.SHEET3 Sau khi thao tac xong O SHEET 3
 Sub xoadulieu_sheet3()
-    
+
             ThisWorkbook.Worksheets(3).Activate
             'Columns("A:A").Select
             Range(Selection, Selection.End(xlToRight)).Select
@@ -165,9 +182,9 @@ Sub xoadulieu_sheet3()
             Columns("A:A").Select
             Range(Selection, Selection.End(xlToRight)).Select
             Selection.Delete Shift:=xlUp
-            
+
             ThisWorkbook.Worksheets(1).Activate
-            
+
             'MsgBox "ThisWorkbook.Name = " & ThisWorkbook.Name
 End Sub
     'ham tim kiem cac dong chua gia tri
@@ -311,12 +328,11 @@ Sub main()
             'Duongdanfile_1 = ThisWorkbook.Sheets(1).TextBox1.Value
             'Duongdanfile_2 = ThisWorkbook.Sheets(1).TextBox2.Value
     End Sub
-
  Sub sapxep()
-    
+
             Workbook_PSM = tenfile_workbook(Duongdanfile_1, "\")
             Workbook_check = tenfile_workbook(Duongdanfile_2, "\")
-                      
+
            'Copy file Workbook_PSM
 Dim c As Variant
 
@@ -350,61 +366,62 @@ Dim sheet_count As Integer
 
             zoneA_row_start = zoneA.Row
             zoneA_row_end = zoneA_row_start + zoneA.MergeArea.Rows.Count - 1
-            
+
              Var_row = Find_row(Workbook_PSM, sheet_count, "B-TYPE ASSY")
             'MsgBox "Var_row = " & Var_row
             Var_column = Find_column(Workbook_PSM, sheet_count, "Var")
             'xac dinh dong cot xzone b
             zoneB_row_start = zoneB.Row
             zoneB_row_end = zoneB_row_start + zoneB.MergeArea.Rows.Count - 2
-            
-            
+
+
             'cot var.no
             Dim var_col_zoneB, var_col_desinge_note, var_col_model_no, var_col_speci_code As Integer
-            
+
             var_col_zoneB = 15
             'cot designer note khi da biet dong
-            
+
             var_col_desinge_note = Find_column_2(Workbook_PSM, sheet_count, "Designer Note", Cells(zoneB_row_start, 1), zoneB_row_start)
              'tim cot Applied Model No.
             var_col_model_no = Find_column_2(Workbook_PSM, sheet_count, "Applied Model No.", Cells(zoneB_row_start, 1), zoneB_row_start)
              'tim cot spect code
             var_col_speci_code = Find_column_2(Workbook_PSM, sheet_count, "Spec code", Cells(zoneB_row_start, 1), zoneB_row_start)
-             
+
              'tim mang chua 300-118
              'tim cot cuoi cung cua cai dong do
              Dim col_finish_318 As Integer
-             
+
               col_finish_318 = Workbooks(Workbook_PSM).Worksheets(sheet_count).Cells(zoneB_row_start, Columns.Count).End(xlToLeft).column
              'tim cot 300
              Dim col_300 As Integer
              Dim kc_col_300 As Integer
              Dim kc_col_318
+             Dim kc_desinger_note_zoneB, kc_model_no_zoneB, kc_col_speci_code As Integer
              ' tim khoang cach
-             
-            
+
+
              col_300 = col_finish_318 - 4
-            
+
             ' tim vung copy zone b
-            Dim kc_desinger_note_zoneB, kc_model_no_zoneB, kc_col_speci_code As Integer
+
             kc_desinger_note_zoneB = var_col_desinge_note - var_col_zoneB
             kc_model_no_zoneB = var_col_model_no - var_col_zoneB
             kc_col_speci_code = var_col_speci_code - var_col_zoneB
              kc_col_300 = col_300 - var_col_zoneB
-            
+
             'tim vung dezingnote zone A
             Dim denote_col_psm As Integer
             Dim part_no_col_psm As Integer
             Dim part_name_col_psm As Integer
             Dim pc_col_psm As Integer
-           
+            Dim kc_denote, kc_part_no, kc_part_name, kc_pc As Integer
             denote_col_psm = Find_column(Workbook_PSM, sheet_count, "Designer Note")
             part_no_col_psm = Find_column(Workbook_PSM, sheet_count, "Part No.")
             part_name_col_psm = Find_column(Workbook_PSM, sheet_count, "Part Name")
             pc_col_psm = Find_column(Workbook_PSM, sheet_count, "PC")
-            
+
             'khoang cach cot
-            Dim kc_denote, kc_part_no, kc_part_name, kc_pc As Integer
+
             kc_denote = denote_col_psm - Var_column
             kc_part_no = part_no_col_psm - Var_column
             kc_part_name = part_name_col_psm - Var_column
@@ -416,7 +433,7 @@ Dim sheet_count As Integer
             'zoneA_row_start = zoneA.Row
             'zoneA_row_end = zoneA_row_start + zoneA.MergeArea.Rows.Count - 1
 
-            
+
             'tim cot cua cell DesignerNote va copy du lieu
 
             Dim wSh As Worksheet
@@ -429,7 +446,7 @@ Dim sheet_count As Integer
             Dim row_end_pase As Integer
 
 
-                
+
 
             'tim kiem vi tri chua keyword de copy vao
             'tim kiem ten funtioncode
@@ -444,17 +461,17 @@ Dim sheet_count As Integer
                         Dim dongcuoicung_check As Integer
                         Dim i_dongcuoicung As Integer
                         Dim luu_dongcuoicung As Integer
-                        
+
                             For Each cell In foundCells
                                a = cell.Row
-                               
+
                                   'dong pase psm cuoi cung
-                                  
+
                                 row_end_pase = a + 4 + zoneA.MergeArea.Rows.Count - 1
-                           
+
                                 b = Workbooks(Workbook_check).Worksheets(1).Cells(a + 1, 1).Value
                                 If b = "@@@@@ASSY List 1" Then
-                                
+
                                           dongcuoicung_check = Cells(Rows.Count, 1).End(xlUp).Row
                                           i_dongcuoicung = a
                                 'tim "@@@@ASSY List 1 End"
@@ -463,25 +480,25 @@ Dim sheet_count As Integer
                                                 luu_dongcuoicung = i_dongcuoicung
                                                 Exit For
                                              End If
-  
+
                                         Next
                                  'luu_dongcuoicung la dong cuoi cung check
-                                
-                                
+
+
                                         var_sosanh = Workbooks(Workbook_check).Worksheets(1).Cells(a + 4, 4).Value
                                      ' c = copy_trunggian(1, Workbook_PSM, Var_column, Var_row, 49)
                                      Dim cot_lastcopy_psm As Integer
                                      Dim cot_lastpase_check As Integer
                                      Dim hang_cuoicung As Integer
-                                     
+
                                      'cot cuoi cung cua psm 1
                                      cot_lastcopy_psm = Workbooks(Workbook_PSM).Worksheets(sheet_count).Cells(zoneA_row_start, Columns.Count).End(xlToLeft).column
                                      'cot dau tien copy vao
-                                     cot_lastpase_check = Workbooks(Workbook_check).Worksheets(1).Cells(a + 4, Columns.Count).End(xlToLeft).column
-                                     
+                                     cot_lastpase_check = Workbooks(Workbook_check).Worksheets(1).UsedRange.Columns.Count
+
                                      'tim hang cuoi cung
                                      hang_cuoicung = Workbooks(Workbook_check).Worksheets(1).Cells(Rows.Count, cot_lastpase_check + 1).End(xlUp).Row
-                                    
+
                                      With Workbooks(Workbook_PSM).Worksheets(sheet_count)
                                      .Range(.Cells(zoneA_row_start, 12), .Cells(zoneA_row_end, cot_lastcopy_psm)).Copy Destination:=Workbooks(Workbook_check).Worksheets(1).Cells(a + 4, cot_lastpase_check + 1)
                                      End With
@@ -490,7 +507,7 @@ Dim sheet_count As Integer
                                         dongdautien_thunhat = a + 5
 
                                         'copy dong 1 o sheet2 vao sheet3
-                                        
+
                                         'bien tim vi tri tiep theo de copy trong sheet3
                                         Dim vitricopy_tieptheo As Integer
                                         vitricopy_tieptheo = dongdautien_thunhat
@@ -505,15 +522,15 @@ Dim sheet_count As Integer
                                          Workbooks(Workbook_check).Worksheets(1).Activate
                                         Dim vitricuoicung_2 As Integer
                                         Dim dongsosanh As Integer
-                                        
+
                                         Call replace_phay
                                         'replace
                                         Call replacekhoangcach
-                                        
+
                                         vitricuoicung_2 = Workbooks(Workbook_check).Worksheets(1).Cells(a + 4, Columns.Count).End(xlToLeft).column
                                         vitricot_var2 = cot_lastpase_check + 1
                                         'copy dong dau tien
-                                        
+
                                         'Workbooks(Workbook_check).Worksheets(1).Range("D" & a + 4).Select
                                         'Range(Selection, Selection.End(xlToRight)).Select
                                        ' Range(Cells(a + 4, 4), Cells(a + 4, vitricuoicung_2)).Copy
@@ -521,18 +538,18 @@ Dim sheet_count As Integer
                                        ' Range(Cells(a + 4, 4), Cells(a + 4, vitricuoicung_2)).Select
                                        ' ActiveSheet.Paste
 
-                                        
+
                                          Workbooks(Workbook_check).Worksheets(1).Activate
                                          'bat dau so sanh to mau
                                          j_chay = dongdautien_thunhat
-                                         
+
                                          For j = j_chay To row_end_pase
                                             If (Cells(j, vitricot_var2) <> "") Then
                                                 khoangcach_2 = khoangcach(Workbook_check, 1, j, vitricot_var2, row_end_pase)
                                                 dongsosanh = j - 1
                                                     For i = dongdautien_thunhat To luu_dongcuoicung
                                                         If (Cells(i, 4)) <> "" Then
-                                                        
+
                                                             If (Cells(i, 4).Value = Cells(j, vitricot_var2).Value) Then
                                                                 dongsosanh = dongsosanh + 1
                                                                     If (Cells(i, 7).Value <> Cells(j, vitricot_var2 + kc_denote).Value) Then
@@ -547,12 +564,12 @@ Dim sheet_count As Integer
                                                                     If (Cells(i, 54).Value <> Cells(dongsosanh, vitricot_var2 + kc_pc).Value) Then
                                                                         Cells(i, 54).Interior.ColorIndex = 37
                                                                     End If
-                                                                    
+
                                                                      'Dim kc_denote, kc_part_no, kc_part_name, kc_pc As Integer
                                                             End If
                                                           End If
                                                     Next i
-                                                    
+
                                             End If
                                             j_chay = j_chay + khoangcach_2
                                          Next j
@@ -564,11 +581,35 @@ Dim sheet_count As Integer
                                       'Call xoadulieu_sheet2(Workbook_check, cot_lastpase_check + 1, vitricuoicung_2, hang_cuoicung)
                                 'bat dau lam viec voi zone b
                                     ElseIf b = "@@@@@Applied Models" Then
+
                                                Dim dongcuoicung_check_zoneB As Integer
                                                Dim i_dongcuoicung_zoneB As Integer
                                                Dim luu_dongcuoicung_zoneB As Integer
                                                Dim var_sosanh_zoneB As String
-                                              
+                                               Dim cot_lastcopy_psm_zoneB As Integer
+                                               Dim cot_lastpase_check_zoneB As Integer
+                                               Dim hang_cuoicung_zoneB As Integer
+                                               Dim dongdautien_thunhat_zoneB As Integer
+                                               Dim dongcuoicung_zoneB As Integer
+                                               Dim khoangcach_1_zoneB As Integer
+                                                Dim khoangcach_2_zoneB As Integer
+                                                Dim j_chay_zoneB As Integer
+                                                Dim i_zoneB As Integer
+                                                Dim j_zoneB As Integer
+                                                Dim vitricot_var2_zoneB As Integer
+                                                Dim vitricuoicung_2_zoneB As Integer
+                                                Dim dongsosanh_zoneB As Integer
+                                                Dim so_phan_tu As Integer
+                                               'khai bao mang
+                                                Dim APP_row() As Integer
+                                                Dim Model_no() As Integer
+                                                Dim gia_tri() As Integer
+                                                Dim row_end_pase_zoneB As Integer
+                                                Dim dong_bat_dau_phan_tu, dong_ket_thu_phan_tu As Integer
+                                                Dim khoang_cach_2_zoneb As Integer
+                                                Dim cot_start_zoneb As Integer
+                                                Dim dong_check_vung2 As Integer
+                                                
                                             'bat dau lam viec voi zone B
                                                     dongcuoicung_check_zoneB = Cells(Rows.Count, 1).End(xlUp).Row
                                                      i_dongcuoicung_zoneB = a
@@ -579,77 +620,68 @@ Dim sheet_count As Integer
                                                            Exit For
                                                         End If
                                                    Next
-                                                   
+
                                                var_sosanh_zoneB = Workbooks(Workbook_check).Worksheets(1).Cells(a + 20, 7).Value
-                                               
+
                                                'bat dau copy
-                                               Dim cot_lastcopy_psm_zoneB As Integer
-                                               Dim cot_lastpase_check_zoneB As Integer
-                                               Dim hang_cuoicung_zoneB As Integer
-                                               
+
+
                                                'cot cuoi cung cua psm 1
                                                 cot_lastcopy_psm_zoneB = Workbooks(Workbook_PSM).Worksheets(sheet_count).Cells(zoneB_row_start, Columns.Count).End(xlToLeft).column
                                                'cot dau tien copy vao
-                                                cot_lastpase_check_zoneB = Workbooks(Workbook_check).Worksheets(1).Cells(a + 6, Columns.Count).End(xlToLeft).column
+                                                cot_lastpase_check_zoneB = Workbooks(Workbook_check).Worksheets(1).UsedRange.Columns.Count
                                                'tim hang cuoi cung
                                                 hang_cuoicung = Workbooks(Workbook_check).Worksheets(1).Cells(Rows.Count, cot_lastpase_check_zoneB + 1).End(xlUp).Row
                                                 'copy xang word moi
                                                 With Workbooks(Workbook_PSM).Worksheets(sheet_count)
                                                 .Range(.Cells(zoneB_row_start, 15), .Cells(zoneB_row_end, cot_lastcopy_psm_zoneB)).Copy Destination:=Workbooks(Workbook_check).Worksheets(1).Cells(a + 20, cot_lastpase_check_zoneB + 1)
                                                 End With
-                                        
-                                                Dim dongdautien_thunhat_zoneB As Integer
-                                                Dim dongcuoicung_zoneB As Integer
+
+                                                'Dim dongdautien_thunhat_zoneB As Integer
+                                                'Dim dongcuoicung_zoneB As Integer
                                                 dongdautien_thunhat_zoneB = a + 21
                                                  'bien tim vi tri tiep theo de copy trong sheet3
                                                 Dim vitricopy_tieptheo_zoneB As Integer
                                                 'vitricopy_tieptheo_zoneB = dongdautien_thunhat_zoneB
-        
-                                                'bien tim do dai cua 1 VAR
-                                                Dim khoangcach_1_zoneB As Integer
-                                                Dim khoangcach_2_zoneB As Integer
 
-                                                Dim j_chay_zoneB As Integer
-                                                Dim i_zoneB As Integer
-                                                Dim j_zoneB As Integer
-                                                Dim vitricot_var2_zoneB As Integer
-                                                Dim vitricuoicung_2_zoneB As Integer
-                                                Dim dongsosanh_zoneB As Integer
-                                                
+                                                'bien tim do dai cua 1 VAR
+
+
                                                 Workbooks(Workbook_check).Worksheets(1).Activate
-                                                
-                                                
+
+
                                                ' Dim dongsosanh_zoneB As Integer
-                                                
+
                                                 vitricuoicung_2_zoneB = Workbooks(Workbook_check).Worksheets(1).Cells(a + 20, Columns.Count).End(xlToLeft).column
                                                 vitricot_var2_zoneB = cot_lastpase_check_zoneB + 1
                                                 Workbooks(Workbook_check).Worksheets(1).Activate
-                                            
+
                                             'bat dau so sanh to mau
-                                            
+
                                                  'bat dau so sanh to mau
                                             'buoc 1 lay gia tri luu vao mang
-                                               Dim so_phan_tu As Integer
-                                               'khai bao mang
-                                                Dim APP_row() As Integer
-                                                Dim Model_no() As Integer
-                                                Dim gia_tri() As Integer
-                                                Dim row_end_pase_zoneB As Integer
-                                                Dim dong_bat_dau_phan_tu, dong_ket_thu_phan_tu As Integer
-                                                Dim cot_start_zoneb As Integer
+
                                                 'tim cot dat tien
                                                 cot_start_zoneb = cot_lastpase_check_zoneB + 1
                                                 dong_bat_dau_phan_tu = a + 21
                                                 dong_ket_thu_phan_tu = a + 21
+                                                dong_check_vung2 = a + 21
                                                 row_end_pase_zoneB = a + 20 + zoneB.MergeArea.Rows.Count - 2
                                                 so_phan_tu = 0
                                                 'Do While dong_ket_thu_phan_tu < row_end_pase_zoneB + 1
+                                                '
+                                                
+                                                
+                                                
                                                     For i_zoneB = dong_bat_dau_phan_tu To row_end_pase_zoneB
-                                                    
+                                                       'dong_ket_thu_phan_tu = i_zoneB
                                                         If Cells(i_zoneB, cot_start_zoneb) <> "" Then
                                                             'tim khoang cach
-                                                            Dim khoang_cach_2_zoneb As Integer
-                                                            
+                                                            'If i_zoneB > dong_check_vung2 Then
+                                                               ' If (Cells(i_zoneB, cot_start_zoneb) = Cells(dong_bat_dau_phan_tu, cot_start_zoneb)) Then
+                                                                  '  Cells(i_zoneB, cot_start_zoneb).ClearContents
+                                                                 '  End If
+                                                                  ' End If
                                                             khoang_cach_2_zoneb = khoangcach(Workbook_check, 1, i_zoneB, cot_start_zoneb, row_end_pase_zoneB)
                                                             dong_ket_thu_phan_tu = i_zoneB
                                                             so_phan_tu = so_phan_tu + 1
@@ -661,12 +693,16 @@ Dim sheet_count As Integer
                                                             Model_no(so_phan_tu) = khoang_cach_2_zoneb
                                                             dong_bat_dau_phan_tu = dong_ket_thu_phan_tu
                                                            ' Exit For
+                                                           
+                                                           
+                                                         
+                                                
                                                         End If
-                                                        
+
                                                     Next i_zoneB
-                                                    
+
                                                ' Loop
-                                               
+
                                                'ham lay mang fiel check xem co goa tri nao khong ton tai khong
                                                 Dim i_check As Integer
                                                 Dim j_check As Integer
@@ -684,160 +720,254 @@ Dim sheet_count As Integer
                                                     End If
 
                                                 End If
-                                                                                            
+
                                             Next i_check
-                                            
-                                            
-                                                
+
+
+
                                               'buoc 2 bat dau so sanh
-                                              
+
                                               Dim i_mang As Integer
                                               Dim j_mang As Integer
                                               Dim k_mang As Integer
                                               Dim row_start_ss, row_end_ss, row_sosanh As Integer
                                               Dim cot_chay_vung1 As Integer
                                               Dim cot_chay_vung2 As Integer
-                                              Dim khoancach1 As Integer
-                                              
-                            
+                                              Dim khoang_cach1 As Integer
+                                              Dim bienchay_vung_1 As Integer
+
+
                                           For i_mang = 1 To so_phan_tu
                                                     row_start_ss = a + 21
                                                     row_end_ss = luu_dongcuoicung_zoneB
                                              'neu trung thi bo qua so sanh voi cai thu hai
-                                             If i_mang < so_phan_tu Then
-                                                If gia_tri(i_mang) = gia_tri(i_mang + 1) Then
-                                                Exit For
-                                                End If
-                                                End If
+                                            'If i_mang < so_phan_tu Then
+                                               ' If gia_tri(i_mang) = gia_tri(i_mang + 1) Then
+                                              '  Exit For
+                                              '  End If
+                                          '  End If
                                             For j_mang = row_start_ss To row_end_ss
-                                                
-                                                
+
+
                                               If Cells(j_mang, 7) <> "" Then
+
+
                                                 If gia_tri(i_mang) = Cells(j_mang, 7) Then  'sosanh
-                                                     
-                                                     
+                                                     'tim khoang cach vung_1
+                                                    khoang_cach1 = khoangcach_vung_1(Workbook_check, 1, j_mang, 7, luu_dongcuoicung_zoneB)
+
                                                     For k_mang = 1 To Model_no(i_mang)
                                                     row_sosanh = APP_row(i_mang)
-                                                    
-                                                 If Cells(j_mang + k_mang - 1, 2) <> "DEL" Then
-                                                 
-                                                  If Cells(j_mang + k_mang - 1, 2) <> "" Then
-                                                                            If Trim(Cells(row_sosanh + k_mang - 1, vitricot_var2_zoneB + kc_col_speci_code)) = "" And Cells(row_sosanh + k_mang - 1, vitricot_var2_zoneB + kc_desinger_note_zoneB) <> "" Then
-                                                                                  
-                                                                                'so sanh dezinnote
-                                                                                   If Cells(j_mang + k_mang - 1, 16) <> Cells(row_sosanh + k_mang - 1, vitricot_var2_zoneB + kc_desinger_note_zoneB) Then
-                                                                                   
-        
-                                                                                       Cells(j_mang + k_mang - 1, 16).Interior.ColorIndex = 37
-                                                                                   End If
-                                                           
-                                                                         
-                                                                              ElseIf Trim(Cells(row_sosanh + k_mang - 1, vitricot_var2_zoneB + kc_col_speci_code)) <> "" And Cells(row_sosanh + k_mang - 1, vitricot_var2_zoneB + kc_desinger_note_zoneB) = "" Then
-                                                                                   'so sanh specinote
-                                                                                   If Cells(j_mang + k_mang - 1, 16) <> Cells(row_sosanh + k_mang - 1, vitricot_var2_zoneB + kc_col_speci_code) Then
-                                                                                       Cells(j_mang + k_mang - 1, 16).Interior.ColorIndex = 37
-                                                                                   
-                                                                                   End If
 
-                                                                                   
+                                                    For bienchay_vung_1 = j_mang To j_mang + khoang_cach1 - 1
+                                                 If Cells(bienchay_vung_1, 2) <> "DEL" Then
+
+                                                  If Cells(bienchay_vung_1, 2) <> "" Then
+                                                                            If Trim(Cells(row_sosanh + k_mang - 1, vitricot_var2_zoneB + kc_col_speci_code)) = "" And Cells(row_sosanh + k_mang - 1, vitricot_var2_zoneB + kc_desinger_note_zoneB) <> "" Then
+
+                                                                                'so sanh dezinnote
+                                                                                   If Cells(bienchay_vung_1, 16) <> Cells(row_sosanh + k_mang - 1, vitricot_var2_zoneB + kc_desinger_note_zoneB) Then
+
+                                                                                       Cells(bienchay_vung_1, 16).Interior.ColorIndex = 37
+                                                                                   End If
+                                                                                   'so sanh app
+                                                                                        cot_chay_vung2 = vitricot_var2_zoneB + kc_col_300
+                                                                                        For cot_chay_vung1 = 47 To 51
+                
+                                                                                         If Cells(row_sosanh + k_mang - 1, cot_chay_vung2).Value = "0" Then
+                                                                                            If (Cells(bienchay_vung_1, cot_chay_vung1) = "N" Or Cells(bienchay_vung_1, cot_chay_vung1) = "X") Then
+                                                                                                If Cells(bienchay_vung_1, cot_chay_vung1).Interior.ColorIndex = 37 Then
+                                                                                                Cells(bienchay_vung_1, cot_chay_vung1).Interior.ColorIndex = 2
+                                                                                                End If
+                                                                                            End If
+                                                                                            If (Cells(bienchay_vung_1, cot_chay_vung1) <> "N" And Cells(bienchay_vung_1, cot_chay_vung1) <> "X") Then
+                                                                                                
+                                                                                            Cells(bienchay_vung_1, cot_chay_vung1).Interior.ColorIndex = 37
+                                                                                            
+                                                                                            End If
+                                                                                           End If
+                                                                                           
+                                                                                            If Cells(row_sosanh + k_mang - 1, cot_chay_vung2) = "*" Then
+                                                                                            If (Cells(bienchay_vung_1, cot_chay_vung1) = "N" Or Cells(bienchay_vung_1, cot_chay_vung1) = "X") Then
+                                                                                                If Cells(bienchay_vung_1, cot_chay_vung1).Interior.ColorIndex = 37 Then
+                                                                                                Cells(bienchay_vung_1, cot_chay_vung1).Interior.ColorIndex = 2
+                                                                                                End If
+                                                                                            End If
+                                                                                            If (Cells(bienchay_vung_1, cot_chay_vung1) <> "N" And Cells(bienchay_vung_1, cot_chay_vung1) <> "X") Then
+                                                                                            Cells(bienchay_vung_1, cot_chay_vung1).Interior.ColorIndex = 37
+                                                                                           End If
+                                                                                          End If
+                
+                                                                                           If IsEmpty(Cells(row_sosanh + k_mang - 1, cot_chay_vung2)) Then
+                                                                                            If Cells(bienchay_vung_1, cot_chay_vung1) = "." Then
+                                                                                                If Cells(bienchay_vung_1, cot_chay_vung1).Interior.ColorIndex = 37 Then
+                                                                                                Cells(bienchay_vung_1, cot_chay_vung1).Interior.ColorIndex = 2
+                                                                                                End If
+                                                                                            End If
+                                                                                            
+                                                                                            
+                                                                                            If Cells(bienchay_vung_1, cot_chay_vung1) <> "." Then
+                                                                                            Cells(bienchay_vung_1, cot_chay_vung1).Interior.ColorIndex = 37
+                                                                                            End If
+                                                                                           End If
+                                                                                           cot_chay_vung2 = cot_chay_vung2 + 1
+                                                                                          Next cot_chay_vung1
+                                                                                      Exit For
+                                                                        'Exit For
+                                                                         'cho nay so sanh app luon
+                                                                         End If
+
+
+                                                                              If Trim(Cells(row_sosanh + k_mang - 1, vitricot_var2_zoneB + kc_col_speci_code)) <> "" And Cells(row_sosanh + k_mang - 1, vitricot_var2_zoneB + kc_desinger_note_zoneB) = "" Then
+                                                                                   'so sanh specinote
+                                                                                   If Cells(bienchay_vung_1, 16) = Cells(row_sosanh + k_mang - 1, vitricot_var2_zoneB + kc_col_speci_code) Then
+
+                                                                                       'cot_chay_vung2 = vitricot_var2_zoneB + kc_col_300
+                                                                                       'dong dau tien cua var
+                                                                                        cot_chay_vung2 = vitricot_var2_zoneB + kc_col_300
+                
+                                                                                        For cot_chay_vung1 = 47 To 51
+                
+                                                                                         If Cells(row_sosanh + k_mang - 1, cot_chay_vung2).Value = "0" Then
+                                                                                            If (Cells(bienchay_vung_1, cot_chay_vung1) = "N" Or Cells(bienchay_vung_1, cot_chay_vung1) = "X") Then
+                                                                                                If Cells(bienchay_vung_1, cot_chay_vung1).Interior.ColorIndex = 37 Then
+                                                                                                Cells(bienchay_vung_1, cot_chay_vung1).Interior.ColorIndex = 2
+                                                                                                End If
+                                                                                            End If
+                                                                                         
+                                                                                            If (Cells(bienchay_vung_1, cot_chay_vung1) <> "N" And Cells(bienchay_vung_1, cot_chay_vung1) <> "X") Then
+                                                                                            Cells(bienchay_vung_1, cot_chay_vung1).Interior.ColorIndex = 37
+                                                                                            End If
+                                                                                           End If
+                                                                                            If Cells(row_sosanh + k_mang - 1, cot_chay_vung2) = "*" Then
+                                                                                            If (Cells(bienchay_vung_1, cot_chay_vung1) = "N" Or Cells(bienchay_vung_1, cot_chay_vung1) = "X") Then
+                                                                                                If Cells(bienchay_vung_1, cot_chay_vung1).Interior.ColorIndex = 37 Then
+                                                                                                Cells(bienchay_vung_1, cot_chay_vung1).Interior.ColorIndex = 2
+                                                                                                End If
+                                                                                            End If
+                                                                                            
+                                                                                            If (Cells(bienchay_vung_1, cot_chay_vung1) <> "N" And Cells(bienchay_vung_1, cot_chay_vung1) <> "X") Then
+                                                                                            Cells(bienchay_vung_1, cot_chay_vung1).Interior.ColorIndex = 37
+                                                                                           End If
+                                                                                          End If
+                
+                                                                                           If IsEmpty(Cells(row_sosanh + k_mang - 1, cot_chay_vung2)) Then
+                                                                                            If Cells(bienchay_vung_1, cot_chay_vung1) = "." Then
+                                                                                                If Cells(bienchay_vung_1, cot_chay_vung1).Interior.ColorIndex = 37 Then
+                                                                                                Cells(bienchay_vung_1, cot_chay_vung1).Interior.ColorIndex = 2
+                                                                                                End If
+                                                                                            End If
+                                                                                           
+                                                                                            If Cells(bienchay_vung_1, cot_chay_vung1) <> "." Then
+                                                                                            Cells(bienchay_vung_1, cot_chay_vung1).Interior.ColorIndex = 37
+                                                                                            End If
+                                                                                           End If
+                                                                                           cot_chay_vung2 = cot_chay_vung2 + 1
+                                                                                        Next cot_chay_vung1
+                
+                                                                                                       'Cells(j_mang + k_mang - 1, 16).Interior.ColorIndex = 37
+                
+                                                                                                 Exit For
+                                                                                    End If
+
+
+
                                                                              End If
-                                                   
+
                                                       ' For cot_chay_vung2 = vitricot_var2_zoneB + kc_col_300 To vitricot_var2_zoneB + kc_col_300 + 4
-                                                                            cot_chay_vung2 = vitricot_var2_zoneB + kc_col_300
-                                                                        For cot_chay_vung1 = 47 To 51
-                                                                        
-                                                                       ' cot_chay_vung2 = vitricot_var2_zoneB + kc_col_300
-                                                                         If Cells(row_sosanh + k_mang - 1, cot_chay_vung2).Value = "0" Then
-                                                                            If (Cells(j_mang + k_mang - 1, cot_chay_vung1) <> "N" And Cells(j_mang + k_mang - 1, cot_chay_vung1) <> "X") Then
-                                                                            Cells(j_mang + k_mang - 1, cot_chay_vung1).Interior.ColorIndex = 37
-                                                                            End If
-                                                                           End If
-                                                                            If Cells(row_sosanh + k_mang - 1, cot_chay_vung2) = "*" Then
-                                                                            If (Cells(j_mang + k_mang - 1, cot_chay_vung1) <> "N" And Cells(j_mang + k_mang - 1, cot_chay_vung1) <> "X") Then
-                                                                            Cells(j_mang + k_mang - 1, cot_chay_vung1).Interior.ColorIndex = 37
-                                                                           End If
-                                                                          End If
-                                                                         
-                                                                           If IsEmpty(Cells(row_sosanh + k_mang - 1, cot_chay_vung2)) Then
-                                                                            If Cells(j_mang + k_mang - 1, cot_chay_vung1) <> "." Then
-                                                                            Cells(j_mang + k_mang - 1, cot_chay_vung1).Interior.ColorIndex = 37
-                                                                            End If
-                                                                           End If
-                                                                           cot_chay_vung2 = cot_chay_vung2 + 1
-                                                                        Next cot_chay_vung1
+
                                                                   ' Next cot_chay_vung2
-                                                   
-                                                   End If
-                                                   
-                                                                
+
+                                                                         End If
+
+
                                                                 'neu cot spect="" then so sanh voi sezinnot
-                                                                
+
                                                                  If Trim(Cells(row_sosanh + k_mang - 1, vitricot_var2_zoneB + kc_col_speci_code)) <> "" And Cells(row_sosanh + k_mang - 1, vitricot_var2_zoneB + kc_desinger_note_zoneB) <> "" Then
-                                                                               If (Cells(j_mang + k_mang - 1, 2) = "") Then
-                                                                               
-                                                                                    If Cells(j_mang + k_mang - 1, 16) <> Cells(row_sosanh + k_mang - 1, vitricot_var2_zoneB + kc_desinger_note_zoneB) Then
-                                                                                    Cells(j_mang + k_mang - 1, 16).Interior.ColorIndex = 37
+                                                                               If (Cells(bienchay_vung_1, 2) = "") Then
+
+                                                                                    If Cells(bienchay_vung_1, 16) <> Cells(row_sosanh + k_mang - 1, vitricot_var2_zoneB + kc_desinger_note_zoneB) Then
+                                                                                    Cells(bienchay_vung_1, 16).Interior.ColorIndex = 37
                                                                                      End If
+                                                                                     'Exit For
+                                                                                    ' Exit For
+                                                                                     
                                                                                 End If
-                                                                              
-                                                                          
+
+
                                                                             'so sanh secice code
-                                                                                If Cells(j_mang + 1 + k_mang - 1, 16) <> Cells(row_sosanh + k_mang - 1, vitricot_var2_zoneB + kc_col_speci_code) Then
-                                                                                    Cells(j_mang + 1 + k_mang - 1, 16).Interior.ColorIndex = 37
+                                                                                If Cells(bienchay_vung_1, 16) = Cells(row_sosanh + k_mang - 1, vitricot_var2_zoneB + kc_col_speci_code) Then
+                                                                                    'Cells(j_mang + 1 + k_mang - 1, 16).Interior.ColorIndex = 37
+                                                                                     cot_chay_vung2 = vitricot_var2_zoneB + kc_col_300
+                
+                                                                                        For cot_chay_vung1 = 47 To 51
+                                                                                        If Cells(row_sosanh + k_mang - 1, cot_chay_vung2) = "0" Then
+                                                                                         If (Cells(bienchay_vung_1, cot_chay_vung1) = "N" Or Cells(bienchay_vung_1, cot_chay_vung1) = "X") Then
+                                                                                                If Cells(bienchay_vung_1, cot_chay_vung1).Interior.ColorIndex = 37 Then
+                                                                                                Cells(bienchay_vung_1, cot_chay_vung1).Interior.ColorIndex = 2
+                                                                                                End If
+                                                                                            End If
+                                                                                            If Cells(bienchay_vung_1, cot_chay_vung1) <> "N" And Cells(bienchay_vung_1, cot_chay_vung1) <> "X" Then
+                                                                                            Cells(bienchay_vung_1, cot_chay_vung1).Interior.ColorIndex = 37
+                                                                                            End If
+                                                                                           End If
+                
+                                                                                           If Cells(row_sosanh + k_mang - 1, cot_chay_vung2) = "*" Then
+                                                                                           If (Cells(bienchay_vung_1, cot_chay_vung1) = "N" Or Cells(bienchay_vung_1, cot_chay_vung1) = "X") Then
+                                                                                                If Cells(bienchay_vung_1, cot_chay_vung1).Interior.ColorIndex = 37 Then
+                                                                                                Cells(bienchay_vung_1, cot_chay_vung1).Interior.ColorIndex = 2
+                                                                                                End If
+                                                                                            End If
+                                                                                           
+                                                                                            If (Cells(bienchay_vung_1, cot_chay_vung1) <> "N" And Cells(bienchay_vung_1, cot_chay_vung1) <> "X") Then
+                                                                                            Cells(bienchay_vung_1, cot_chay_vung1).Interior.ColorIndex = 37
+                                                                                            End If
+                                                                                            
+                                                                                           End If
+                
+                
+                                                                                           If IsEmpty(Cells(row_sosanh + k_mang - 1, cot_chay_vung2)) Then
+                                                                                            If Cells(bienchay_vung_1, cot_chay_vung1) = "." Then
+                                                                                                If Cells(bienchay_vung_1, cot_chay_vung1).Interior.ColorIndex = 37 Then
+                                                                                                Cells(bienchay_vung_1, cot_chay_vung1).Interior.ColorIndex = 2
+                                                                                                End If
+                                                                                            End If
+                                                                                           
+                                                                                            If Cells(bienchay_vung_1, cot_chay_vung1) <> "." Then
+                                                                                            Cells(bienchay_vung_1, cot_chay_vung1).Interior.ColorIndex = 37
+                                                                                            End If
+                                                                                           End If
+                                                                                           cot_chay_vung2 = cot_chay_vung2 + 1
+                                                                                        Next cot_chay_vung1
+                                                                                         Exit For
+                                                                            'j_mang = j_mang + 1
                                                                                 End If
                                                                             'so sanh model no
-                                                                            
-                                                                           cot_chay_vung2 = vitricot_var2_zoneB + kc_col_300
-                                                                            
-                                                                        For cot_chay_vung1 = 47 To 51
-                                                                        If Cells(row_sosanh + k_mang - 1, cot_chay_vung2) = "0" Then
-                                                                            If Cells(j_mang + 1 + k_mang - 1, cot_chay_vung1) <> "N" And Cells(j_mang + 1 + k_mang - 1, cot_chay_vung1) <> "X" Then
-                                                                            Cells(j_mang + 1 + k_mang - 1, cot_chay_vung1).Interior.ColorIndex = 37
-                                                                            End If
-                                                                           End If
-                                                                           
-                                                                           If Cells(row_sosanh + k_mang - 1, cot_chay_vung2) = "*" Then
-                                                                            If (Cells(j_mang + 1 + k_mang - 1, cot_chay_vung1) <> "N" And Cells(j_mang + 1 + k_mang - 1, cot_chay_vung1) <> "X") Then
-                                                                            Cells(j_mang + 1 + k_mang - 1, cot_chay_vung1).Interior.ColorIndex = 37
-                                                                            End If
-                                                                           End If
-                                                                           
 
-                                                                           If IsEmpty(Cells(row_sosanh + k_mang - 1, cot_chay_vung2)) Then
-                                                                            If Cells(j_mang + 1 + k_mang - 1, cot_chay_vung1) <> "." Then
-                                                                            Cells(j_mang + 1 + k_mang - 1, cot_chay_vung1).Interior.ColorIndex = 37
-                                                                            End If
-                                                                           End If
-                                                                           cot_chay_vung2 = cot_chay_vung2 + 1
-                                                                        Next cot_chay_vung1
-                                                                            
-                                                                            j_mang = j_mang + 1
-                                                                            ' Exit For
+                                                                          
+                                                                          
                                                                      End If
-     
-                                                                           
+
+
                                                          End If
-                                                                
+                                                          Next bienchay_vung_1
 
                                                     Next k_mang
                                                               ' row_start_ss = j_mang + Model_no(so_phan_tu)
                                                             End If
-                                                             
+
                                                             'Exit For
                                                             End If
-                                                        Next j_mang
-        
+                                            Next j_mang
+
                                                     'row_start_ss = a + 21
                                                     'row_end_ss = luu_dongcuoicung_zoneB
-            
-                                                Next i_mang
+
+                                        Next i_mang
                                             'ket thuc so sanh to mau
-                                                
-                                        
+
                                     End If
-                                
-                                
-                        
+
                                 Debug.Print ("The value has been found in cell: " & cell.Address)
                             Next
 
@@ -845,14 +975,13 @@ Dim sheet_count As Integer
             Next
 Dim hang_cuoicung_sheet2 As Integer
 
-
-
 'ket thuc cop mot sheet
     Next sheet_count
 
  'xoa du lieu copy vao
    Call xoadulieu_sheet2(Workbook_check, vitricot_var2_zoneB, 1000, hang_cuoicung)
-                   
+
 End Sub
- 
+
+
 
