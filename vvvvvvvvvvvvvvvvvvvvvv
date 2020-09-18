@@ -1,0 +1,1675 @@
+vvOption Compare Database
+Option Explicit
+
+Private Const MAX_LENGTH_SHEET_NAME = "12345678901234567890123システム一覧01"
+'/*******************************************************************************/
+'/* 関数名 : Main_ImportExcel_報告用一覧                                       */
+'/*-----------------------------------------------------------------------------*/
+'/* 引数 : なし                                                                 */
+'/*-----------------------------------------------------------------------------*/
+'/* 戻値 : なし                                                                 */
+'/*-----------------------------------------------------------------------------*/
+'/* 機能 : インポート対象のExcelパスを取得し、インポートを開始する              */
+'/*-----------------------------------------------------------------------------*/
+'/* 特記 : なし                                                                 */
+'/*******************************************************************************/
+Public Sub Main_ImportExcel_報告用一覧()
+On Error GoTo ErrorTrap
+    Dim strErrTrapMsg As String                 ' ErrTrap用
+    Dim strMyFunctionName As String             ' ErrTrap用
+    Dim strExcelPath As String                  ' インポート対象のExcelパス
+    Dim frmProcessing As Form_F_ProcessingMsg   ' 進捗フォーム
+    Dim strWorkPath As String                   ' Workフォルダパス
+    Dim strLogFilePath As String                ' Logファイルパス
+    Dim bLTtoWT As Boolean                      ' [LT_xxx]から[WT_xxx]へ変更列の取得完了フラグ
+    Dim objExistField As Object                 ' [LT_xxx]から[WT_xxx]に取得した列の辞書
+    Dim strLogMsgMissingCol As String           ' LogMsg必須列不足用
+    Dim bMakeCSV As Boolean
+    Dim strSheetNameArray() As String           'シート名
+    Dim strCsvFileName As String                'インポート結果csvファイル名
+    Dim lSheetCount As Long                     '登録されたシート数
+    Dim bOK As Boolean
+    
+    ' 初期化
+    strWorkPath = mdlCommonFile.GetWorkPath                                                 ' Workフォルダパス
+    strLogFilePath = CurrentProject.path & LOG_EXCELIMPORT                                  ' Logファイルパス
+    strCsvFileName = ""
+    bOK = True
+    
+    ' インポート対象のファイルを選択
+    strExcelPath = mdlCommonFile.GetOpenFileName(FILTER_EXCEL)  ' ファイル選択ダイアログの表示
+    If strExcelPath = "" Then
+        Exit Sub
+    End If
+    
+    ' ログ出力開始
+    Call mdlDBG.MyDebugPrint("報告用一覧インポート開始", DBGPRT)
+    Call mdlLog.LogOpen(strLogFilePath, FLG_OVERWRITE)
+    Call mdlLog.OutputLog("/*************************************/")
+    Call mdlLog.OutputLog("/*      報告用一覧インポート開始     */")
+    Call mdlLog.OutputLog("/*************************************/")
+    Call mdlLog.OutputLog(strExcelPath)
+    
+    ' 進捗フォームのインスタンス生成
+    Set frmProcessing = New Form_F_ProcessingMsg
+    
+    ' 各シートのcsv生成
+    Call mdlDBG.MyDebugPrint("CSVファイル作成", DBGPRT)
+    bMakeCSV = MakeCSVFiles(strExcelPath, strWorkPath, frmProcessing, strSheetNameArray)
+    
+    ' 各シートのcsv生成失敗の場合
+    If bMakeCSV = False Then
+        bOK = bOK And False
+        
+    ' 各シートのcsv生成成功の場合
+    Else
+    
+        ' [WT_報告用_ImportBase]から[ET_xxx]に取得した列の辞書を初期化
+        Set objExistField = CreateObject("Scripting.Dictionary")
+        
+        ' 各CSVファイルのリンクテーブルを作成し、WT_報告用_ImportBaseのデータを作成
+        bLTtoWT = MakeCSVLinkTableSetWT(strWorkPath, frmProcessing, strSheetNameArray, objExistField, lSheetCount)
+        
+        ' エラー発生した場合
+        If bLTtoWT = False Then
+            bOK = bOK And False
+        End If
+        
+        ' [WT_報告用_ImportBasex]に1件以上登録した
+        If lSheetCount > 0 Then
+            'ReNo更新 thiet lap recno
+            Call SetAllRecNo(frmProcessing)
+            
+            'インポートエラーLog出力
+            bOK = bOK And ImportErrLog(frmProcessing, objExistField)
+            
+            'DT更新、インポート結果csv出力処理
+            Call ImportCsv(frmProcessing, strCsvFileName)
+            
+        End If
+        
+    End If
+    
+    ' ログ出力終了
+    Call mdlDBG.MyDebugPrint("報告用インポート終了", DBGPRT)
+    Call mdlLog.OutputLog("/*************************************/")
+    Call mdlLog.OutputLog("/*      報告用一覧インポート終了     */")
+    Call mdlLog.OutputLog("/*************************************/")
+
+    ' 進捗フォームのインスタンス破棄
+    Set frmProcessing = Nothing
+    
+    ' Log出力処理完了時Msg表示
+    Call LogOutputEndMsg(bOK, strCsvFileName)
+    
+ResumePoint:
+    
+    ' ログファイルをクローズ
+    Call mdlLog.LogClose
+
+    ' 辞書を後始末
+    Call ReleaseExistField(objExistField)
+    Set objExistField = Nothing
+    
+    ' リンクテーブルの削除
+    Call mdlCommonDB.DeleteTable(LT_NAME_EDIT_報告用)
+    
+    ' 各シートのcsv削除
+    Call DeleteImportCSVFiles(strWorkPath)
+    
+    
+    
+    Exit Sub
+    
+ErrorTrap:
+    strMyFunctionName = "mdlImportExcel_報告用.Main_ImportExcel_報告用一覧" ' ErrTrap用
+    strErrTrapMsg = "【Err発生関数】" & strMyFunctionName & vbCrLf
+    strErrTrapMsg = strErrTrapMsg & "【Err内容】" & Err.Description
+    Debug.Print strErrTrapMsg
+    Call mdlDBG.RaiseError(strMyFunctionName, Err.Description)
+    Resume ResumePoint
+End Sub
+
+'/***************************************************************************************/
+'/* 関数名 : MakeCSVFiles                                                               */
+'/*-------------------------------------------------------------------------------------*/
+'/* 引数 : ByVal strappExcelFilePath As String          [I/ ] appExcelファイルパス      */
+'/*      : ByVal strWorkPath As String                  [I/ ] CSVファイル格納用Workパス */
+'/*      : ByRef frmProcessing As Form_F_ProcessingMsg  [ /O] 進捗フォームオブジェクト  */
+'/*      : ByRef strSheetNameArray() As String          [ /O] シート名リスト            */
+'/*-------------------------------------------------------------------------------------*/
+'/* 戻値 : 真 : Excelに必須シートあり(※) = CSVファイル生成成功                         */
+'/*      : 偽 : Excelに必須シートなし(※) = CSVファイル生成失敗                         */
+'/*-------------------------------------------------------------------------------------*/
+'/* 機能 : appExcel 各シートのcsv生成                                                   */
+'/*-------------------------------------------------------------------------------------*/
+'/* 特記 : ※ 必須シートとは[eV3P],[D0-D1],[D2-DSK4]の3シート                           */
+'/***************************************************************************************/
+Private Function MakeCSVFiles(ByVal strappExcelFilePath As String, ByVal strWorkPath As String, ByRef frmProcessing As Form_F_ProcessingMsg, ByRef strSheetNameArray() As String) As Boolean
+    Dim appEx As Object         ' Excel.appExlication
+    Dim WB As Object            ' Excel.Workbook
+    Dim strPrgMsg1 As String    ' プログレスMsg1
+    Dim strPrgMsg2 As String    ' プログレスMsg2
+    Dim bRet As Boolean
+    Dim strErrMsg As String
+    Dim WS As Object
+    Dim strSheetName As String  'シート名
+    Dim strSheets As String
+    
+    ' 進捗メッセージの初期化
+    strPrgMsg1 = "インポート前処理 "
+    strPrgMsg2 = "CSV生成"
+    Call frmProcessing.Init("報告用データのインポート", strPrgMsg1, strPrgMsg2, "", 2)      ' 進捗Msg初期化
+    Call mdlDBG.MyDebugPrint("CSV生成 開始", DBGPRT_IMPORT_FS)
+    
+    ' もし、既存のCSVが残っていたら削除する
+    Call DeleteImportCSVFiles(strWorkPath)
+    Call frmProcessing.ProgressBarIncrement                                                 ' 進捗進行_1/2
+    
+    
+    ' ～ 備忘メモ ～～～～～～～～～～～～～～～～～～～～～～～～～
+    ' シート毎にappExcelファイルのオープンを行うのは非効率なため、
+    ' ブックオープンはここで1度だけ行い、wbを使い回す。
+    ' ～～～～～～～～～～～～～～～～～～～～～～～～～～～～～～～
+    Set appEx = CreateObject("excel.Application")
+    Set WB = appEx.Workbooks.Open(strappExcelFilePath, , True)
+    
+    'プロジェクト一覧以外のシート毎にcsvファイル生成
+    bRet = False
+    '全シートを 1 つずつループして処理する
+    For Each WS In WB.sheets
+        strSheetName = WS.Name
+        
+        If InStr(strSheetName, "システム一覧") > 0 Or InStr(strSheetName, "部品一覧") > 0 Then
+            bRet = True
+            strSheets = strSheets & strSheetName & ","
+            
+            ' Excel 1シートの更新日をフォーマット
+            Call mdlCSV.SetDateFormat(WB.sheets(strSheetName), 6)
+
+            Call mdlCommonExcel.ExportCSV(WB, strSheetName, strWorkPath & strSheetName)         ' csv生成
+        End If
+        
+    Next WS
+    
+    Call frmProcessing.ProgressBarIncrement                                             ' 進捗進行_2/2
+    
+    appEx.DisplayAlerts = False
+    Call WB.Close(False)
+    appEx.DisplayAlerts = False
+    
+    Set WB = Nothing
+    Set WS = Nothing
+    Call appEx.Quit
+    Set appEx = Nothing
+    
+    Call mdlDBG.MyDebugPrint("CSV生成 終了", DBGPRT_IMPORT_FS)
+        
+    ' システム一覧と部品一覧シートの存在確認NG
+    If bRet = False Then
+        
+         ' 進捗フォームのインスタンス破棄
+        Set frmProcessing = Nothing
+        
+        strErrMsg = strErrMsg & vbCrLf
+        strErrMsg = "システム一覧シートや部品一覧シートが存在しないため、インポートできません。"
+        Call mdlLog.OutputLog(strErrMsg)
+        
+    Else
+        strSheetNameArray = Split(Left(strSheets, Len(strSheets) - 1), ",")
+        Call frmProcessing.ClearMsgAll  ' 進捗Msgクリア
+    End If
+    
+    
+    MakeCSVFiles = bRet
+End Function
+
+'/*******************************************************************************/
+'/* 関数名 : DeleteCSVFiles                                                     */
+'/*-----------------------------------------------------------------------------*/
+'/* 引数 : ByVal strWorkPath As String  [I/ ] CSVファイル格納用Workパス         */
+'/*-----------------------------------------------------------------------------*/
+'/* 戻値 : なし                                                                 */
+'/*-----------------------------------------------------------------------------*/
+'/* 機能 : Excel 各シートのcsv削除                                              */
+'/*-----------------------------------------------------------------------------*/
+'/* 特記 : なし                                                                 */
+'/*******************************************************************************/
+Private Sub DeleteImportCSVFiles(ByVal strWorkPath As String)
+    Dim bufFile As String, cnt As Long
+    
+    'システム一覧のcsvファイル削除
+    bufFile = Dir(strWorkPath & "*システム一覧*.csv")
+    Do While bufFile <> ""
+        Call mdlCommonFile.DeleteFile(strWorkPath, bufFile)
+        bufFile = Dir(strWorkPath & "*システム一覧*.csv")
+    Loop
+    
+    '部品一覧のcsvファイル削除
+    bufFile = Dir(strWorkPath & "*部品*.csv")
+    Do While bufFile <> ""
+        Call mdlCommonFile.DeleteFile(strWorkPath, bufFile)
+        bufFile = Dir(strWorkPath & "*部品*.csv")
+    Loop
+End Sub
+
+'/*****************************************************************************************************/
+'/* 関数名 : MakeCSVLinkTableSetWT                                                                    */
+'/*---------------------------------------------------------------------------------------------------*/
+'/* 引数 : ByVal strWorkPath As String                  [I/ ] CSVファイル格納用Workパス               */
+'/*      : ByRef frmProcessing As Form_F_ProcessingMsg  [I/O] 進捗フォームオブジェクト                */
+'/*      : ByRef strSheetNameArray() As String          [I/ ] シート名リスト                          */
+'/*      : ByRef objExistField As Object                [ /O] [LT_xxx]から[WT_xxx]に取得した列の辞書  */
+'/*      : ByRef lCount As Long                         [ /O] WTに登録したシート数                    */
+'/*---------------------------------------------------------------------------------------------------*/
+'/* 戻値 : 真 : [WT_報告用_ImportBase]に登録する時エラーが発生してない                                */
+'/*      : 偽 : [WT_報告用_ImportBase]に登録する時エラーが発生された                                  */
+'/*---------------------------------------------------------------------------------------------------*/
+'/* 機能 : 各CSVファイルをリンクテーブルを作成し、WTテーブルにデータ登録                              */
+'/*---------------------------------------------------------------------------------------------------*/
+'/* 特記 : なし                                                                                       */
+'/*****************************************************************************************************/
+Private Function MakeCSVLinkTableSetWT(ByVal strWorkPath As String, ByRef frmProcessing As Form_F_ProcessingMsg, ByRef strSheetNameArray() As String, ByRef objExistField As Object, ByRef lCount As Long) As Boolean
+    
+    Dim strPrgMsg1 As String            ' プログレスMsg1
+    Dim strPrgMsg2 As String            ' プログレスMsg2
+    Dim strPrgMsg3 As String            ' プログレスMsg3
+    Dim strObjErrs As Object            ' シートチェックエラー内容
+    Dim strErr As Variant
+    Dim bWTImp As Boolean
+    Dim bRet As Boolean
+    Dim i As Long
+    
+    ' 初期化
+    bRet = True
+    lCount = 0
+    
+    ' 進捗メッセージの初期化
+    strPrgMsg1 = "インポート前処理 "
+    strPrgMsg2 = "リンクテーブル生成"
+    Call frmProcessing.Init("報告用データのインポート", strPrgMsg1, strPrgMsg2, "", UBound(strSheetNameArray))    ' 進捗Msg初期化
+    
+    Call mdlDBG.MyDebugPrint("シート構成チェック 開始", DBGPRT_IMPORT_FS)
+    Call mdlLog.OutputLog(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+    Call mdlLog.OutputLog(">>     シート構成チェック 開始     >>")
+    Call mdlLog.OutputLog(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+        
+    For i = LBound(strSheetNameArray) To UBound(strSheetNameArray)
+    
+        '初期化
+        Set strObjErrs = CreateObject("Scripting.Dictionary")
+        
+        Call mdlDBG.MyDebugPrint(strSheetNameArray(i) & "CSVリンクテーブル生成 開始", DBGPRT_IMPORT_FS)
+        
+        ' 既存のCSVリンクテーブルがあったら削除する
+        Call mdlCommonDB.DeleteTable(LT_NAME_EDIT_報告用)
+    
+        strPrgMsg3 = strSheetNameArray(i) & strPrgMsg2
+        
+        'リンクテーブル作成
+        Call ImportCSVLinkTable(strWorkPath, strSheetNameArray(i), LT_NAME_EDIT_報告用)
+        
+        
+        Call mdlDBG.MyDebugPrint(strSheetNameArray(i) & "CSVリンクテーブル生成 終了", DBGPRT_IMPORT_FS)
+        
+        Call mdlDBG.MyDebugPrint(strSheetNameArray(i) & "WT_報告用_ImportBaseデータ生成 開始", DBGPRT_IMPORT_FS)
+        '初期の場合、WT_報告用_ImportBaseのデータを削除する
+        If i = 0 Then
+            Call mdlCommonDB.ClearTable("WT_報告用_ImportBase")
+            ' WT_報告用_ImportBaseのオートナンバーを1からにリセット
+            Call mdlCommonDB.ResetAutoNumber("WT_報告用_ImportBase", "番号")
+        End If
+
+        Call objExistField.Add(strSheetNameArray(i), CreateObject("Scripting.Dictionary"))  ' 毎シートの見出しを格納する辞書
+ 
+        'WT_報告用_ImportBaseにデータを登録
+        strPrgMsg3 = strSheetNameArray(i) & "データをWTテーブルに登録"
+        Call mdlDBG.MyDebugPrint(strPrgMsg3, DBGPRT_IMPORT_FS)
+        
+        ' リンクテーブルから各[WT_報告用_ImportBase]のデータを作成
+        bWTImp = SetWT_Import(strSheetNameArray(i), objExistField, strObjErrs)
+        
+        If bWTImp = False Then
+            For Each strErr In strObjErrs
+                mdlLog.OutputLog (strObjErrs(strErr))
+            Next strErr
+            
+            bRet = bRet And False
+        Else
+            lCount = lCount + 1
+        End If
+        
+        Call mdlDBG.MyDebugPrint(strSheetNameArray(i) & "WT_報告用_ImportBaseデータ生成 終了", DBGPRT_IMPORT_FS)
+        
+        Call frmProcessing.ProgressBarIncrement                                              ' 進捗進行
+        
+    Next i
+    
+    Call frmProcessing.ProgressBarIncrement                                              ' 進捗進行
+    
+    Call mdlDBG.MyDebugPrint("シート構成チェック 終了", DBGPRT_IMPORT_FS)
+    Call mdlLog.OutputLog("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
+    Call mdlLog.OutputLog("<<     シート構成チェック 終了     <<")
+    Call mdlLog.OutputLog("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
+    Call frmProcessing.ClearMsgAll                                                      ' 進捗Msgクリア
+    
+    Set strObjErrs = Nothing
+    Set strErr = Nothing
+    
+    MakeCSVLinkTableSetWT = bRet
+End Function
+
+'/*******************************************************************************/
+'/* 関数名 : ImportCSVLinkTable                                                 */
+'/*-----------------------------------------------------------------------------*/
+'/* 引数 : ByVal strWorkPath As String  [I/ ] CSVファイル格納用Workパス         */
+'/*      : ByVal strSheetName As String [I/ ] インポート対象                    */
+'/*      : ByVal strTableName As String [I/ ] リンクテーブル名                  */
+'/*-----------------------------------------------------------------------------*/
+'/* 戻値 : なし                                                                 */
+'/*-----------------------------------------------------------------------------*/
+'/* 機能 : 1CSVファイルをリンクテーブルとしてインポート                         */
+'/*-----------------------------------------------------------------------------*/
+'/* 特記 : なし                                                                 */
+'/*******************************************************************************/
+Public Sub ImportCSVLinkTable(ByVal strWorkPath As String, ByVal strSheetName As String, ByVal strTableName As String)
+    Dim strLinkDef As String    ' リンク定義
+    Dim strFileName As String   ' リンクテーブルにしたいcsvファイル名
+    Dim td As DAO.TableDef
+    
+    strLinkDef = "報告用一覧 リンク定義"
+    strFileName = mdlCommonFile.MakeExtCsv(strSheetName)
+    
+    Set td = CurrentDb.CreateTableDef(strTableName)
+    td.Connect = "Text;DSN=" & strLinkDef & ";FMT=Delimited;HDR=NO;IMEX=2;ACCDB=YES;DATABASE=" & strWorkPath
+    td.SourceTableName = strFileName
+    Call CurrentDb.TableDefs.Append(td)
+    
+    Set td = Nothing
+End Sub
+
+'/****************************************************************************************/
+'/* 関数名 : SetWT_Import                                                                */
+'/*--------------------------------------------------------------------------------------*/
+'/* 引数 : ByRef strSheetName  As String [I/ ] シート名                                  */
+'/*      : ByRef objExistField As Object [ /O] 見出しを格納する辞書                      */
+'/*        ByRef strErr        As Object [ /O] シートチェックエラーメッセージ            */
+'/*--------------------------------------------------------------------------------------*/
+'/* 戻値 : 真 : [WT_報告用_ImportBase]に[LT_EDIT_報告用]の値設定を実行できた             */
+'/*      : 偽 : [WT_報告用_ImportBase]に[LT_EDIT_報告用]の値設定を実行できなかった       */
+'/*--------------------------------------------------------------------------------------*/
+'/* 機能 : [ET_xxx]テーブルを作成                                                        */
+'/*--------------------------------------------------------------------------------------*/
+'/* 特記 : なし                                                                          */
+'/****************************************************************************************/
+Private Function SetWT_Import(ByRef strSheetName As String, ByRef objExistField As Object, ByRef strErr As Object) As Boolean
+    Dim strLTName As String             ' リンクテーブル名称
+    Dim objReqFields As Object          ' WTの必須列
+    Dim objReqFields1 As Object         ' WTの備考必須列
+    Dim bObjRed As Boolean              ' WTの備考必須列のチェック
+    Dim objFieldsCount As Object        ' WTの列登場回数管理用
+    Dim strSQLGetWTData As String       ' WTのデータ取得用SQL
+    Dim vWTData As Variant              ' リンクテーブルのデータ
+    Dim vLTTitleName As String          ' 6行目見出し
+    Dim strArrayCol() As String         ' LT_EDIT_報告用登録列番号配列
+    Dim strCols As String               ' LT_EDIT_報告用登録列番号
+    Dim strWTFieldName As String        ' WT_報告用_ImportBase.フィールド名
+    Dim strLTFieldInfo As String        ' リンクテーブルの見出し情報「xxx    ( n列)」
+    Dim strSQLInto As String
+    Dim strSQL As String
+    Dim strSQLintoWt As String
+    Dim strSQLValue As String
+    Dim strErrMsg As String
+    Dim bD0 As Boolean
+    Dim bD2 As Boolean
+    Dim bSyu As Boolean
+    Dim bShi As Boolean
+    Dim bRet As Boolean
+    Dim strUpNull As String
+    Dim vFieldReq As Variant
+    Dim strTemp As String
+     'van add start
+    Dim bpr As Boolean
+    Dim bmeka As Boolean
+    Dim bfsr1 As Boolean
+    Dim bfsr2 As Boolean
+    Dim bfsr3 As Boolean
+    Dim bfsr4 As Boolean
+    Dim bfsr5 As Boolean
+    Dim bfsr6 As Boolean
+    Dim bfsr7 As Boolean
+    'van add end
+    Dim i As Long
+    Dim j As Long
+
+    
+    ' 初期化
+    bRet = True
+    strLTName = "LT_EDIT_報告用"
+    
+    ' LTの必須列見出しを登録
+    Set objReqFields = CreateObject("Scripting.Dictionary")
+    Call objReqFields.Add("プロジェクト名_業務上", "")        ' Key:LTの列見出し文言　値:0で初期化
+    Call objReqFields.Add("システム名", "")                   ' Key:LTの列見出し文言　値:0で初期化
+    Call objReqFields.Add("機能安全マイルストン", "")         ' Key:LTの列見出し文言　値:0で初期化
+    Call objReqFields.Add("D0D1_更新日", "")                  ' Key:LTの列見出し文言　値:0で初期化
+    Call objReqFields.Add("D2DSK4_更新日", "")                ' Key:LTの列見出し文言　値:0で初期化
+    
+    Set objReqFields1 = CreateObject("Scripting.Dictionary")
+    Call objReqFields1.Add("決心会結果", 0)                   ' Key:LTの列見出し文言　値:0で初期化
+    Call objReqFields1.Add("XX0コメント", 0)                  ' Key:LTの列見出し文言　値:0で初期化
+    Call objReqFields1.Add("KS0コメント", 0)                  ' Key:LTの列見出し文言　値:0で初期化
+    Call objReqFields1.Add("管理者コメント", 0)               ' Key:LTの列見出し文言　値:0で初期化
+    
+     'van add start
+    Call objReqFields1.Add("プレレビュー", 0)                ' Key:LTの列見出し文言　値:0で初期化
+    Call objReqFields1.Add("メカ審", 0)                      ' Key:LTの列見出し文言　値:0で初期化
+    Call objReqFields1.Add("FSR#1", 0)                       ' Key:LTの列見出し文言　値:0で初期化
+    Call objReqFields1.Add("FSR#2", 0)                       ' Key:LTの列見出し文言　値:0で初期化
+    Call objReqFields1.Add("FSR#3", 0)                       ' Key:LTの列見出し文言　値:0で初期化
+    Call objReqFields1.Add("FSR#4", 0)                       ' Key:LTの列見出し文言　値:0で初期化
+    Call objReqFields1.Add("FSR#5", 0)                       ' Key:LTの列見出し文言　値:0で初期化
+    Call objReqFields1.Add("FSR#6", 0)                       ' Key:LTの列見出し文言　値:0で初期化
+    Call objReqFields1.Add("FSR#7", 0)
+  'van add end
+    
+    
+    ' LTの列見出しを登録し、登場回数を0回で初期化しておく
+    Set objFieldsCount = CreateObject("Scripting.Dictionary")
+    Call objFieldsCount.Add("業界分類", 0)                    ' Key:LTの列見出し文言　値:0で初期化
+    Call objFieldsCount.Add("プロジェクト名_業務上", 0)       ' Key:LTの列見出し文言　値:0で初期化
+    Call objFieldsCount.Add("システム名", 0)                  ' Key:LTの列見出し文言　値:0で初期化
+    Call objFieldsCount.Add("機能安全マイルストン", 0)        ' Key:LTの列見出し文言　値:0で初期化
+    Call objFieldsCount.Add("プレレビュー", 0)                ' Key:LTの列見出し文言　値:0で初期化
+    Call objFieldsCount.Add("メカ審", 0)                      ' Key:LTの列見出し文言　値:0で初期化
+    Call objFieldsCount.Add("FSR#1", 0)                       ' Key:LTの列見出し文言　値:0で初期化
+    Call objFieldsCount.Add("FSR#2", 0)                       ' Key:LTの列見出し文言　値:0で初期化
+    Call objFieldsCount.Add("FSR#3", 0)                       ' Key:LTの列見出し文言　値:0で初期化
+    Call objFieldsCount.Add("FSR#4", 0)                       ' Key:LTの列見出し文言　値:0で初期化
+    Call objFieldsCount.Add("FSR#5", 0)                       ' Key:LTの列見出し文言　値:0で初期化
+    Call objFieldsCount.Add("FSR#6", 0)                       ' Key:LTの列見出し文言　値:0で初期化
+    Call objFieldsCount.Add("FSR#7", 0)                       ' Key:LTの列見出し文言　値:0で初期化
+    Call objFieldsCount.Add("決心会結果", 0)                  ' Key:LTの列見出し文言　値:0で初期化
+    Call objFieldsCount.Add("XX0コメント", 0)                 ' Key:LTの列見出し文言　値:0で初期化
+    Call objFieldsCount.Add("KS0コメント", 0)                 ' Key:LTの列見出し文言　値:0で初期化
+    Call objFieldsCount.Add("管理者コメント", 0)              ' Key:LTの列見出し文言　値:0で初期化
+    Call objFieldsCount.Add("D0D1_更新日", 0)                 ' Key:LTの列見出し文言　値:0で初期化
+    Call objFieldsCount.Add("D2DSK4_更新日", 0)               ' Key:LTの列見出し文言　値:0で初期化
+    
+    ' リンクテーブルのデータを取得
+    strSQLGetWTData = "SELECT * FROM " & strLTName & ";"
+    
+    vWTData = mdlCommonDB.GetSqlVal_RecordSetAll_import(strSQLGetWTData, "", False)
+    
+    '1行目の2列はプロジェクト名_節目会値をチェック
+    If Nz(vWTData(1, 2), "") = "" Then
+        Call strErr.Add("1", strSheetName & "シートのプロジェクト名_節目会が空欄のため、インポートできません。")
+        bRet = False
+    End If
+
+    If (bRet = True) Then
+        strSQLInto = "[プロジェクト名_節目会], [シート名], "
+        
+        '更新項目見出し有無初期化
+        bD0 = False
+        bD2 = False
+        bSyu = False
+        bShi = False
+        'van add start
+        bpr = False
+        bmeka = False
+        bfsr1 = False
+        bfsr2 = False
+        bfsr3 = False
+        bfsr4 = False
+        bfsr5 = False
+        bfsr6 = False
+        bfsr7 = False
+        'van add end
+       ' 6行目の見出しをチェック
+        For i = 1 To UBound(vWTData, 2)
+            '6行目の見出しを取得
+            vLTTitleName = vWTData(6, i)
+            
+            ' 見出し名が空じゃなかったら
+           If Not IsNull(vLTTitleName) Then
+                ' 見出し名が必須列辞書に登録されていたら
+                If objFieldsCount.exists(vLTTitleName) Then
+                    ' 列のカウントを更新
+                    objFieldsCount(vLTTitleName) = objFieldsCount(vLTTitleName) + 1
+                
+                    If (objFieldsCount(vLTTitleName) = 1) Then
+                    
+                        ' ログ出力文字列
+                        If vLTTitleName = "機能安全マイルストン" Then
+                            strLTFieldInfo = mdlLog.GetFieldInfo("対象名", i)     ' リンクテーブルの見出し情報「xxx    ( n列)」
+                        Else
+                            strLTFieldInfo = mdlLog.GetFieldInfo(vLTTitleName, i) ' リンクテーブルの見出し情報「xxx    ( n列)」
+                        End If
+                        
+                        Select Case vLTTitleName
+                        
+                        Case "プロジェクト名_業務上", "システム名", _
+                             "D0D1_更新日", "D2DSK4_更新日"
+                             
+                            strCols = strCols & Format(i, "00") & ","                                               ' "LT_EDIT_報告用の列番号"
+                            strWTFieldName = vLTTitleName                                                   ' [フィールドn]の1行目(見出し名)
+                            
+                            Call objExistField(strSheetName).Add(strWTFieldName, strLTFieldInfo)            ' Key:WTのフィールド名、値:LTの情報
+                            strSQLInto = strSQLInto & "[" & strWTFieldName & "], "
+                            
+                        Case "機能安全マイルストン"
+                            strWTFieldName = "部品名"
+                            strCols = strCols & Format(i, "00") & ","                                               ' "LT_EDIT_報告用の列番号"
+                            
+                            Call objExistField(strSheetName).Add(strWTFieldName, strLTFieldInfo)            ' Key:WTのフィールド名、値:LTの情報
+                            strSQLInto = strSQLInto & "[" & strWTFieldName & "], "
+                           
+                            'van add start
+                            
+                         Case "プレレビュー"
+                            bpr = True
+                            
+                            strCols = strCols & Format(i, "00") & ","
+                            strWTFieldName = "プレレビュー計画日"                                                    ' [フィールドn]の1行目(見出し名)
+                            
+                            Call objExistField(strSheetName).Add(strWTFieldName, strLTFieldInfo)            ' Key:WTのフィールド名、値:LTの情報
+                            strSQLInto = strSQLInto & "[" & strWTFieldName & "], "
+                            
+                         Case "メカ審"
+                            bmeka = True
+                            
+                            strCols = strCols & Format(i, "00") & ","
+                            strWTFieldName = "メカ審計画日"                                                    ' [フィールドn]の1行目(見出し名)
+                            
+                            Call objExistField(strSheetName).Add(strWTFieldName, strLTFieldInfo)            ' Key:WTのフィールド名、値:LTの情報
+                            strSQLInto = strSQLInto & "[" & strWTFieldName & "], "
+                            
+                         Case "FSR#1"
+                            bfsr1 = True
+                            
+                            strCols = strCols & Format(i, "00") & ","
+                            strWTFieldName = "FSR1_実施計画日"                                                    ' [フィールドn]の1行目(見出し名)
+                            
+                            Call objExistField(strSheetName).Add(strWTFieldName, strLTFieldInfo)            ' Key:WTのフィールド名、値:LTの情報
+                            strSQLInto = strSQLInto & "[" & strWTFieldName & "], "
+                         Case "FSR#2"
+                            bfsr2 = True
+                            
+                            strCols = strCols & Format(i, "00") & ","
+                            strWTFieldName = "FSR2_実施計画日"                                                    ' [フィールドn]の1行目(見出し名)
+                            
+                            Call objExistField(strSheetName).Add(strWTFieldName, strLTFieldInfo)            ' Key:WTのフィールド名、値:LTの情報
+                            strSQLInto = strSQLInto & "[" & strWTFieldName & "], "
+                            
+                         Case "FSR#3"
+                            bfsr3 = True
+                            
+                            strCols = strCols & Format(i, "00") & ","
+                            strWTFieldName = "FSR3_実施計画日"                                                    ' [フィールドn]の1行目(見出し名)
+                            
+                            Call objExistField(strSheetName).Add(strWTFieldName, strLTFieldInfo)            ' Key:WTのフィールド名、値:LTの情報
+                            strSQLInto = strSQLInto & "[" & strWTFieldName & "], "
+                            
+                        Case "FSR#4"
+                            bfsr4 = True
+                            
+                            strCols = strCols & Format(i, "00") & ","
+                            strWTFieldName = "FSR4_実施計画日"                                                    ' [フィールドn]の1行目(見出し名)
+                            
+                            Call objExistField(strSheetName).Add(strWTFieldName, strLTFieldInfo)            ' Key:WTのフィールド名、値:LTの情報
+                            strSQLInto = strSQLInto & "[" & strWTFieldName & "], "
+                        Case "FSR#5"
+                            bfsr5 = True
+                            
+                            strCols = strCols & Format(i, "00") & ","
+                            strWTFieldName = "FSR5_実施計画日"                                                    ' [フィールドn]の1行目(見出し名)
+                            
+                            Call objExistField(strSheetName).Add(strWTFieldName, strLTFieldInfo)            ' Key:WTのフィールド名、値:LTの情報
+                            strSQLInto = strSQLInto & "[" & strWTFieldName & "], "
+                         Case "FSR#6"
+                            bfsr6 = True
+                            
+                            strCols = strCols & Format(i, "00") & ","
+                            strWTFieldName = "FSR6_実施計画日"                                                    ' [フィールドn]の1行目(見出し名)
+                            
+                            Call objExistField(strSheetName).Add(strWTFieldName, strLTFieldInfo)            ' Key:WTのフィールド名、値:LTの情報
+                            strSQLInto = strSQLInto & "[" & strWTFieldName & "], "
+                         Case "FSR#7"
+                            bfsr7 = True
+                            
+                            strCols = strCols & Format(i, "00") & ","
+                            strWTFieldName = "FSR7_実施計画日"                                                    ' [フィールドn]の1行目(見出し名)
+                            
+                            Call objExistField(strSheetName).Add(strWTFieldName, strLTFieldInfo)            ' Key:WTのフィールド名、値:LTの情報
+                            strSQLInto = strSQLInto & "[" & strWTFieldName & "], "
+                            'van add end
+
+   
+                        Case "決心会結果"
+                            bD0 = True
+                            
+                            strCols = strCols & Format(i, "00") & ","
+                            strWTFieldName = "備考D0-D1"                                                    ' [フィールドn]の1行目(見出し名)
+                            
+                            Call objExistField(strSheetName).Add(strWTFieldName, strLTFieldInfo)            ' Key:WTのフィールド名、値:LTの情報
+                            strSQLInto = strSQLInto & "[" & strWTFieldName & "], "
+                            
+                        Case "XX0コメント"
+                            bD2 = True
+                            
+                            strCols = strCols & Format(i, "00") & ","
+                            strWTFieldName = "備考D2-DSK4"                                                  ' [フィールドn]の1行目(見出し名)
+                            
+                            Call objExistField(strSheetName).Add(strWTFieldName, strLTFieldInfo)            ' Key:WTのフィールド名、値:LTの情報
+                            strSQLInto = strSQLInto & "[" & strWTFieldName & "], "
+                            
+                        Case "管理者コメント"
+                            bSyu = True
+                            
+                            strCols = strCols & Format(i, "00") & ","                                               ' "LT_EDIT_報告用の列番号"
+                            strWTFieldName = "週報コメント"                                                 ' [フィールドn]の1行目(見出し名)
+                            
+                            Call objExistField(strSheetName).Add(strWTFieldName, strLTFieldInfo)            ' Key:WTのフィールド名、値:LTの情報
+                            strSQLInto = strSQLInto & "[" & strWTFieldName & "], "
+                            
+                        Case "KS0コメント"
+                            bShi = True
+                            strCols = strCols & Format(i, "00") & ","                                               ' "LT_EDIT_報告用の列番号"
+                            strWTFieldName = "進捗管理コメント"                                             ' [フィールドn]の1行目(見出し名)
+                            
+                            Call objExistField(strSheetName).Add(strWTFieldName, strLTFieldInfo)            ' Key:WTのフィールド名、値:LTの情報
+                            strSQLInto = strSQLInto & "[" & strWTFieldName & "], "
+                            
+                        End Select
+                    End If
+                End If
+            End If
+        Next i
+    
+        bObjRed = False
+        ' フィールドの存在確認
+        For Each vFieldReq In objFieldsCount
+
+             ' 2列以上(列重複)
+            If 1 < objFieldsCount(vFieldReq) Then
+                strErrMsg = strErrMsg & vFieldReq & ","
+            ' 1列以下
+            Else
+                ' 必須項目列だったら
+                If objReqFields.exists(vFieldReq) Then
+                    ' 1行なかったら
+                    If 1 <> objFieldsCount(vFieldReq) Then
+                        strErrMsg = strErrMsg & vFieldReq & ","
+                    End If
+                    
+                End If
+            End If
+            
+            If vFieldReq = "機能安全マイルストン" Then
+                strErrMsg = strErrMsg & "%更新対象%"
+            End If
+            
+            ' 更新項目列だったら
+            If objReqFields1.exists(vFieldReq) Then
+                ' 1列あれば
+                If 1 = objFieldsCount(vFieldReq) Then
+                    bObjRed = True
+                End If
+            End If
+        Next vFieldReq
+        
+        strErrMsg = Replace(strErrMsg, "機能安全マイルストン", "対象名")
+        
+        '更新項目は全て1列もなかったら
+        If bObjRed = False Then
+            strErrMsg = Replace(strErrMsg, "%更新対象%", "更新対象列,")
+        Else
+            strErrMsg = Replace(strErrMsg, "%更新対象%", "")
+        End If
+        
+        'エラーなしの場合、WT_報告用_ImportBaseにデータを登録する
+        If (strErrMsg = "") Then
+            If bD0 = False Then
+                strUpNull = strUpNull & "'NULL',"
+                strSQLInto = strSQLInto & "[備考D0-D1], "
+            End If
+            If bD2 = False Then
+                strUpNull = strUpNull & "'NULL',"
+                strSQLInto = strSQLInto & "[備考D2-DSK4], "
+            End If
+            If bSyu = False Then
+                strUpNull = strUpNull & "'NULL',"
+                strSQLInto = strSQLInto & "[週報コメント], "
+            End If
+            If bShi = False Then
+                strUpNull = strUpNull & "'NULL',"
+                strSQLInto = strSQLInto & "[進捗管理コメント], "
+            End If
+             'van add start
+            
+            If bpr = False Then
+                strUpNull = strUpNull & "'NULL',"
+                strSQLInto = strSQLInto & "[プレレビュー計画日], "
+            End If
+            
+            If bmeka = False Then
+                strUpNull = strUpNull & "'NULL',"
+                strSQLInto = strSQLInto & "[メカ審計画日], "
+            End If
+            
+            If bfsr1 = False Then
+                strUpNull = strUpNull & "'NULL',"
+                strSQLInto = strSQLInto & "[FSR1_実施計画日], "
+            End If
+            If bfsr2 = False Then
+                strUpNull = strUpNull & "'NULL',"
+                strSQLInto = strSQLInto & "[FSR2_実施計画日], "
+            End If
+            If bfsr3 = False Then
+                strUpNull = strUpNull & "'NULL',"
+                strSQLInto = strSQLInto & "[FSR3_実施計画日], "
+            End If
+            If bfsr4 = False Then
+                strUpNull = strUpNull & "'NULL',"
+                strSQLInto = strSQLInto & "[FSR4_実施計画日], "
+            End If
+            
+            If bfsr5 = False Then
+                strUpNull = strUpNull & "'NULL',"
+                strSQLInto = strSQLInto & "[FSR5_実施計画日], "
+            End If
+            If bfsr6 = False Then
+                strUpNull = strUpNull & "'NULL',"
+                strSQLInto = strSQLInto & "[FSR6_実施計画日], "
+            End If
+            If bfsr7 = False Then
+                strUpNull = strUpNull & "'NULL',"
+                strSQLInto = strSQLInto & "[FSR7_実施計画日], "
+            End If
+
+        
+        
+        'van add end
+            strSQLintoWt = "INSERT INTO [WT_報告用_ImportBase](" & strSQLInto & "[行番号], [D0D1_RecNo], [D2DSK4_RecNo]) VALUES ("
+            
+            strArrayCol = Split(Left(strCols, Len(strCols) - 1), ",")
+            '7行目から報告用データを登録する
+            For i = 7 To UBound(vWTData, 1)
+                
+                '奇数行のデータのみ取得する
+                If i Mod 2 = 1 Then
+                    strSQLValue = "'" & vWTData(1, 2) & "', '" & strSheetName & "', "
+                    '列ループ
+                    For j = 1 To UBound(vWTData, 2)
+                        '必要項目情報取得
+                        If UBound(Filter(strArrayCol, Format(j, "00"))) <> -1 Then
+                        
+                            strTemp = Replace(vWTData(i, j), vbCrLf, vbLf)
+                            strTemp = Replace(strTemp, vbLf, vbCrLf)
+                            
+                            strSQLValue = strSQLValue & "'" & mdlCommonForm.MakeQuotation(strTemp) & "',"
+                        End If
+                    Next j
+                    
+                    'RecNo初期値を-1(DT_xxxに未登録)で更新
+                    strSQL = strSQLintoWt & strSQLValue & strUpNull & i & ", " & rntUnregistMT & "," & rntUnregistMT & ");"
+                    
+                    Call mdlCommonDB.ExecutSQL(strSQL)
+                End If
+            Next i
+        
+        Else
+            ' 最後の','を削除
+            strErrMsg = Left(strErrMsg, Len(strErrMsg) - 1)
+            Call strErr.Add("2", strSheetName & "シートで以下の列が削除または重複しているため、インポートできません。" & vbCrLf & strErrMsg)
+            bRet = False
+        End If
+            
+    End If
+    
+    Set objFieldsCount = Nothing
+    Set objReqFields = Nothing
+    Set objReqFields1 = Nothing
+    Set vWTData = Nothing
+    Set vFieldReq = Nothing
+    
+    SetWT_Import = bRet
+End Function
+
+'/***************************************************************************************/
+'/* 関数名 : SetAllRecNo                                                                */
+'/*-------------------------------------------------------------------------------------*/
+'/* 引数 : ByRef frmProcessing As Form_F_ProcessingMsg  [I/O] 進捗フォームオブジェクト                  */
+'/*-------------------------------------------------------------------------------------*/
+'/* 戻値 : なし                                                                         */
+'/*-------------------------------------------------------------------------------------*/
+'/* 機能 : [WT_報告用_ImportBes].[D0D1_RecNo]を更新                                     */
+'/*      : 【更新結果のRecNo】                                                          */
+'/*      :  -2  ：必須項目のいずれかに空文字あり                                        */
+'/*      :  -1  ：DT_D0D1に未登録                                                       */
+'/*      : 1以上：DT_D0D1に登録済みの既存RecNo                                          */
+'/*-------------------------------------------------------------------------------------*/
+'/* 特記 : なし                                                                         */
+'/***************************************************************************************/
+Public Sub SetAllRecNo(ByRef frmProcessing As Form_F_ProcessingMsg)
+    
+    Call frmProcessing.Init("報告用データのインポート", "WTデータ更新", "RecNo更新", "", 3)
+    
+    ' 必須項目不正のRecNoを「-2」にする
+    Call mdlDBG.MyDebugPrint("[WT_報告用_ImportBase]の必須項目不正のRecNo更新", DBGPRT_IMPORT_FS)
+    Call SetRecNo("UPQ_WT_報告用_ImportBase_必須項目不正", "", rntNull, "")
+    
+    Call frmProcessing.ProgressBarIncrement                                              ' 進捗進行_1/3
+    
+    ' D0D1登録済のRecNoを更新
+    Call mdlDBG.MyDebugPrint("[WT_報告用_ImportBase]のD0D1登録済のRecNo更新", DBGPRT_IMPORT_FS)
+    Call SetRecNo("UPQ_WT_報告用_ImportBase_D0D1登録済", "D0D1_RecNo", rntRegistDT, "DT_D0D1_RecNo")
+    
+    Call frmProcessing.ProgressBarIncrement                                              ' 進捗進行_2/3
+    
+    ' D2DSK4登録済のRecNoを更新
+    Call mdlDBG.MyDebugPrint("[WT_報告用_ImportBase]のD2DSK4登録済のRecNo更新", DBGPRT_IMPORT_FS)
+    Call SetRecNo("UPQ_WT_報告用_ImportBase_D2DSK4登録済", "D2DSK4_RecNo", rntRegistDT, "DT_D2DSK4_RecNo")
+    
+    Call frmProcessing.ProgressBarIncrement                                              ' 進捗進行_2/3
+    Call frmProcessing.ClearMsgAll
+End Sub
+
+'/***************************************************************************************/
+'/* 関数名 : SetRecNo                                                                   */
+'/*-------------------------------------------------------------------------------------*/
+'/* 引数 : ByVal strTable     As String [I/ ] WTの更新元クエリ                          */
+'/*      : ByVal strFieldName As String [I/ ] 更新対象フィールド名                      */
+'/*      : ByVal strInitVal   As String [I/ ] 更新値                                    */
+'/*      : ByVal strGetField  As String [I/ ] 更新値フィールド名 　                     */
+'/*-------------------------------------------------------------------------------------*/
+'/* 戻値 : なし                                                                         */
+'/*-------------------------------------------------------------------------------------*/
+'/* 機能 : [strTableName].[strFieldName]をstrInitValで初期化する                        */
+'/*-------------------------------------------------------------------------------------*/
+'/* 特記 : なし                                                                         */
+'/***************************************************************************************/
+Public Sub SetRecNo(ByVal strTable As String, ByVal strFieldName As String, ByVal strInitVal As String, ByVal strGetField As String)
+    Dim strSQLETInit As String
+    Dim rs As DAO.Recordset
+    Dim rsData As DAO.Recordset
+    
+     ' クエリを開く
+    Set rs = CurrentDb.OpenRecordset(strTable, dbOpenDynaset)
+        
+    ' 該当レコードなしの場合
+    If rs.EOF Then
+        '処理なし
+        
+    Else
+        rs.MoveLast
+        rs.MoveFirst
+        
+        ' レコード分ループ
+        Do Until rs.EOF
+            
+            If (strInitVal <> rntRegistDT) Then
+                ' [strTableName].[strFieldName]をstrInitValで初期化
+                If strFieldName = "" Then
+                    strSQLETInit = "UPDATE %TABLE% SET %TABLE%.D0D1_RecNo = " & strInitVal & ", %TABLE%.D2DSK4_RecNo = " & strInitVal
+                Else
+                    strSQLETInit = "UPDATE %TABLE% SET %TABLE%.%FIELD% = " & strInitVal
+                End If
+            Else
+                strSQLETInit = "UPDATE %TABLE% SET %TABLE%.%FIELD% = " & rs.Fields(strGetField).Value
+            End If
+            
+            strSQLETInit = strSQLETInit & " WHERE %TABLE%.番号 = " & rs.Fields("番号").Value & ";"
+                           
+            strSQLETInit = Replace(strSQLETInit, "%TABLE%", "WT_報告用_ImportBase")
+            strSQLETInit = Replace(strSQLETInit, "%FIELD%", strFieldName)
+            
+            Call mdlCommonDB.ExecutSQL(strSQLETInit)
+            
+            rs.MoveNext
+        Loop
+    End If
+    
+    ' オブジェクトのクローズと破棄
+    rs.Close
+    
+    Set rs = Nothing
+    Set rsData = Nothing
+    
+End Sub
+
+'/*******************************************************************************************************/
+'/* 関数名 : ImportErrLog                                                                               */
+'/*-----------------------------------------------------------------------------------------------------*/
+'/* 引数 : ByRef frmProcessing As Form_F_ProcessingMsg  [I/O] 進捗フォームオブジェクト                  */
+'/*      : ByRef objExistField As Object                [I/O] [LT_xxx]から[ET_xxx]に取得した列の辞書    */
+'/*-----------------------------------------------------------------------------------------------------*/
+'/* 戻値 : 真 : Error/WarningのLog出力なし                                                              */
+'/*      : 偽 : Error/WarningのLog出力あり                                                              */
+'/*-----------------------------------------------------------------------------------------------------*/
+'/* 機能 : インポートエラーログ出力                                                                     */
+'/*-----------------------------------------------------------------------------------------------------*/
+'/* 特記 : なし                                                                                         */
+'/*******************************************************************************************************/
+Public Function ImportErrLog(ByRef frmProcessing As Form_F_ProcessingMsg, ByRef objExistField As Object) As Boolean
+    Dim bOK As Boolean
+    Dim bRec As Boolean
+    Dim strSQL As String
+     ' 初期化
+    bOK = True
+    
+    Call frmProcessing.Init("報告用データのインポート", "チェック", "無効レコードチェック", "", 4)
+    
+    Call mdlDBG.MyDebugPrint("無効レコードチェック 開始", DBGPRT_IMPORT_FS)
+    Call mdlLog.OutputLog(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+    Call mdlLog.OutputLog(">>    無効レコードチェック  開始    >>")
+    Call mdlLog.OutputLog(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+    
+    ' 無効レコードをLogに出力
+    bRec = CheckInvalidData(objExistField)
+    '必須項目不正エラーがある場合、インポート結果に'×'更新
+    If bRec = False Then
+    
+        bOK = bOK And bRec
+        strSQL = "UPDATE WT_報告用_ImportBase SET WT_報告用_ImportBase.D0D1更新結果 = '×', WT_報告用_ImportBase.D2DSK4更新結果 = '×' WHERE (WT_報告用_ImportBase.[D0D1_RecNo]=-2);"
+        Call mdlCommonDB.ExecutSQL(strSQL)
+    End If
+    
+    
+    Call frmProcessing.ProgressBarIncrement                                              ' 進捗進行_1/4
+    
+    ' D0D1更新済をLogに出力
+    bRec = CheckD0D1UpdData(objExistField)
+    'D0D1更新済エラーがある場合、インポート結果に'×'を更新
+    If bRec = False Then
+    
+        bOK = bOK And bRec
+        Call mdlCommonDB.ExecutSQL("UPQ_Update_WT_報告用_ImportBase_D0D1更新済")
+    End If
+    
+    Call frmProcessing.ProgressBarIncrement                                              ' 進捗進行_2/4
+    
+    ' D2DSK4更新済をLogに出力
+    bRec = CheckD2DSK4UpdData(objExistField)
+    'D2DSK4更新済エラーがある場合、インポート結果に'×'更新
+    If bRec = False Then
+    
+        bOK = bOK And bRec
+        Call mdlCommonDB.ExecutSQL("UPQ_Update_WT_報告用_ImportBase_D2DSK4更新済")
+    End If
+        
+    Call frmProcessing.ProgressBarIncrement                                              ' 進捗進行_3/4
+    
+    Call mdlLog.OutputLog("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
+    Call mdlLog.OutputLog("<<     無効データチェック  終了     <<")
+    Call mdlLog.OutputLog("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
+    Call mdlDBG.MyDebugPrint("無効データチェック 終了", DBGPRT_IMPORT_FS)
+
+    ' 未登録をLogに出力
+    bRec = CheckUnregisteredData()
+    '未登録エラーがある場合、インポート結果に'×'更新
+    If bRec = False Then
+    
+        bOK = bOK And bRec
+        strSQL = "UPDATE WT_報告用_ImportBase SET WT_報告用_ImportBase.D0D1更新結果 = '×', WT_報告用_ImportBase.D2DSK4更新結果 = '×' WHERE ((WT_報告用_ImportBase.[D0D1_RecNo]=-1) AND (WT_報告用_ImportBase.[D2DSK4_RecNo]=-1));"
+        Call mdlCommonDB.ExecutSQL(strSQL)
+    End If
+       
+    Call frmProcessing.ProgressBarIncrement                                              ' 進捗進行_4/4
+    Call frmProcessing.ClearMsgAll
+    
+    ImportErrLog = bOK
+
+End Function
+
+'/*******************************************************************************************/
+'/* 関数名 : CheckInvalidData                                                               */
+'/*-----------------------------------------------------------------------------------------*/
+'/* 引数 : ByRef objExistField As Object    [I/O] [LT_xxx]から[WT_xxx]に取得した列の辞書    */
+'/*-----------------------------------------------------------------------------------------*/
+'/* 戻値 : 真 : Error/WarningのLog出力なし                                                  */
+'/*      : 偽 : Error/WarningのLog出力あり                                                  */
+'/*-----------------------------------------------------------------------------------------*/
+'/* 機能 : [WT_報告用_ImportBase]の無効データチェック(下記2つの確認を行う)                  */
+'/*      : ①無効レコードの確認                                                             */
+'/*      : 　①-1：下記列で入力がないセル 　　　　　　　　　　　　　　　　　　　　　　      */
+'/*      : 　    ：プロジェクト名_業務上、システム名　　　　　　　　　　　　　　　　　　　　*/
+'/*      : 　       D0D1_更新日、D2DSK4_更新日                　　　　　　　　              */
+'/*-----------------------------------------------------------------------------------------*/
+'/* 特記 : 　　　　　　　　　　　　　　　　　　　　　　　　　　　　　                       */
+'/*******************************************************************************************/
+Private Function CheckInvalidData(ByRef objExistField As Object) As Boolean
+    Dim rs As DAO.Recordset
+    Dim rsData As DAO.Recordset
+    Dim strRowErrMsg As String
+    Dim lRowID As Long
+    Dim objField As DAO.Field2
+    Dim strSheetName As String
+    Dim objSheet As Object
+    Dim strLog As String
+    Dim bOK As Boolean
+    
+    
+    ' 初期化
+    bOK = True
+    
+    ' [JQ_WT_報告用_ImportBase_ErrRow_必須項目]クエリを開く
+    Set rs = CurrentDb.OpenRecordset("JQ_WT_報告用_ImportBase_ErrRow_必須項目", dbOpenDynaset)
+        
+    ' 該当レコードなしの場合
+    If rs.EOF Then
+        '処理なし
+        
+    Else
+        ' 進捗メッセージの初期化
+        rs.MoveLast
+        rs.MoveFirst
+        
+        ' 必須項目判定のレコード分ループ
+        Do Until rs.EOF
+            
+            ' ローカル変数の初期化
+            strRowErrMsg = ""                                   ' 初期化 エラーMsg
+            lRowID = rs.Fields("行番号").Value                  ' 初期化 チェック対象行数
+            strSheetName = rs.Fields("シート名").Value          ' 初期化 シート名
+            
+            Set objSheet = objExistField(strSheetName)
+            
+            ' プロジェクト名_業務上
+            Set objField = rs.Fields("プロジェクト名_業務上")
+            Call mdlImportExcel_見える化.CheckInputVal(objField, "", objSheet, strRowErrMsg)                     ' 空文字確認
+              
+            ' システム名
+            Set objField = rs.Fields("システム名")
+            Call mdlImportExcel_見える化.CheckInputVal(objField, "", objSheet, strRowErrMsg)                     ' 空文字確認
+           
+            ' 部品
+            Set objField = rs.Fields("部品名")
+            Call mdlImportExcel_見える化.CheckInputVal(objField, "", objSheet, strRowErrMsg)                     ' 空文字確認
+            
+           ' 更新日確認
+            If (IsDate(rs.Fields("D0D1_更新日")) = False) Then
+                strRowErrMsg = strRowErrMsg & objSheet(rs.Fields("D0D1_更新日").Name) & ":更新日不正,"
+            End If
+            
+            ' 更新日確認
+            If (IsDate(rs.Fields("D2DSK4_更新日")) = False) Then
+                strRowErrMsg = strRowErrMsg & objSheet(rs.Fields("D2DSK4_更新日").Name) & ":更新日不正,"
+            End If
+            
+            '対象名確認
+            If strSheetName Like "*システム一覧*" Then
+                If (StrComp(rs.Fields("システム名").Value, rs.Fields("部品名").Value) <> 0) Then
+                    strRowErrMsg = strRowErrMsg & objSheet(rs.Fields("部品名").Name) & ":[システム名]と不一致,"
+                End If
+            
+            End If
+            
+            ' ログ出力
+            If (strRowErrMsg <> "") Then
+                ' エラーログ出力
+                strLog = SHEET_NAME & GetSheetLog(strSheetName) & LINE_NUM & GetRowNoLog(lRowID) & ":" & strRowErrMsg    ' "行番号 n:見出し   (i列):理由"
+                Call mdlLog.OutputLog(strLog, LOGTYPE_ERROR)
+            End If
+            
+            rs.MoveNext
+        Loop
+        
+        bOK = bOK And False
+    End If
+    
+    ' オブジェクトのクローズと破棄
+    rs.Close
+    
+    Set rs = Nothing
+    Set rsData = Nothing
+    Set objField = Nothing
+            
+    ' 戻り値の設定
+    CheckInvalidData = bOK
+End Function
+
+'/*******************************************************************************************/
+'/* 関数名 : CheckD0D1UpdData                                                               */
+'/*-----------------------------------------------------------------------------------------*/
+'/* 引数 : ByRef objExistField As Object　　[I/O] [LT_xxx]から[WT_xxx]に取得した列の辞書    */
+'/*-----------------------------------------------------------------------------------------*/
+'/* 戻値 : 真 : Error/WarningのLog出力なし                                                  */
+'/*      : 偽 : Error/WarningのLog出力あり                                                  */
+'/*-----------------------------------------------------------------------------------------*/
+'/* 機能 : [WT_報告用_ImportBase]の無効データチェック(下記2つの確認を行う)                  */
+'/*      : ①無効レコードの確認                                                             */
+'/*      : 　①-2：下記列でDBの更新日がDTの更新日より新しい                                 */
+'/*      : 　       D0D1_更新日　　　　　　　　 　                                          */
+'/*-----------------------------------------------------------------------------------------*/
+'/* 特記 : 備考D0-D1列があるシートをチェック対象とする                       　　　　　　　 */
+'/*******************************************************************************************/
+Private Function CheckD0D1UpdData(ByRef objExistField As Object) As Boolean
+    Dim rs As DAO.Recordset
+    Dim rsData As DAO.Recordset
+    Dim strRowErrMsg As String
+    Dim lRowID As Long
+    Dim objField As DAO.Field2
+    Dim strSheetName As String
+    Dim strLog As String
+    Dim objSheet As Object
+    Dim bOK As Boolean
+    
+    ' 初期化
+    bOK = True
+           
+    ' [JQ_WT_報告用_ImportBase_D0D1更新済]クエリを開く
+    Set rs = CurrentDb.OpenRecordset("JQ_WT_報告用_ImportBase_D0D1更新済", dbOpenDynaset)
+        
+    ' 該当レコードなしの場合
+    If rs.EOF Then
+        '処理なし
+        
+    Else
+        ' 進捗メッセージの初期化
+        rs.MoveLast
+        rs.MoveFirst
+        
+        ' 必須項目判定のレコード分ループ
+        Do Until rs.EOF
+            
+            ' ローカル変数の初期化
+            strRowErrMsg = ""                                   ' 初期化 エラーMsg
+            lRowID = rs.Fields("行番号").Value                ' 初期化 チェック対象行数
+            strSheetName = rs.Fields("シート名").Value          ' 初期化 シート名
+           
+            Set objSheet = objExistField(strSheetName)
+            strRowErrMsg = strRowErrMsg & objSheet(rs.Fields("D0D1_更新日").Name) & ":DB更新済み,"
+           
+            ' ログ出力
+            If (strRowErrMsg <> "") Then
+                ' エラーログ出力
+                strLog = SHEET_NAME & GetSheetLog(strSheetName) & LINE_NUM & GetRowNoLog(lRowID) & ":" & strRowErrMsg       ' "行番号 n:見出し   (i列):理由"
+                Call mdlLog.OutputLog(strLog, LOGTYPE_ERROR)
+            End If
+            
+            rs.MoveNext
+        Loop
+        
+        bOK = bOK And False
+    End If
+    
+    ' オブジェクトのクローズと破棄
+    rs.Close
+    
+    Set rs = Nothing
+    Set rsData = Nothing
+    Set objField = Nothing
+    
+    ' 戻り値の設定
+    CheckD0D1UpdData = bOK
+End Function
+
+'/*******************************************************************************************/
+'/* 関数名 : CheckD2DSK4UpdData                                                             */
+'/*-----------------------------------------------------------------------------------------*/
+'/* 引数 : ByRef objExistField As Object  　[I/O] [LT_xxx]から[WT_xxx]に取得した列の辞書    */
+'/*-----------------------------------------------------------------------------------------*/
+'/* 戻値 : 真 : Error/WarningのLog出力なし                                                  */
+'/*      : 偽 : Error/WarningのLog出力あり                                                  */
+'/*-----------------------------------------------------------------------------------------*/
+'/* 機能 : [WT_報告用_ImportBase]の無効データチェック(下記2つの確認を行う)                  */
+'/*      : ①無効レコードの確認                                                             */
+'/*      : 　①-2：下記列でDBの更新日がDTの更新日より新しい                                 */
+'/*      : 　       D2DSK4_更新日 　 　　　　　 　                                          */
+'/*-----------------------------------------------------------------------------------------*/
+'/* 特記 : 備考D2-DSK4列,週報コメント列,進捗管理列があるシートをチェック対象とする          */
+'/*******************************************************************************************/
+Private Function CheckD2DSK4UpdData(ByRef objExistField As Object) As Boolean
+    Dim rs As DAO.Recordset
+    Dim rsData As DAO.Recordset
+    Dim strRowErrMsg As String
+    Dim lRowID As Long
+    Dim objField As DAO.Field2
+    Dim strSheetName As String
+    Dim strLog As String
+    Dim objSheet As Object
+    Dim bOK As Boolean
+    
+    ' 初期化
+    bOK = True
+           
+    ' [JQ_WT_報告用_ImportBase_D0D1更新済]クエリを開く
+    Set rs = CurrentDb.OpenRecordset("JQ_WT_報告用_ImportBase_D2DSK4更新済", dbOpenDynaset)
+        
+    ' 該当レコードなしの場合
+    If rs.EOF Then
+        '処理なし
+        
+    Else
+        ' 進捗メッセージの初期化
+        rs.MoveLast
+        rs.MoveFirst
+        
+        ' 必須項目判定のレコード分ループ
+        Do Until rs.EOF
+            
+            ' ローカル変数の初期化
+            strRowErrMsg = ""                                   ' 初期化 エラーMsg
+            lRowID = rs.Fields("行番号").Value                ' 初期化 チェック対象行数
+            strSheetName = rs.Fields("シート名").Value          ' 初期化 シート名
+            
+            Set objSheet = objExistField(strSheetName)
+           
+            strRowErrMsg = strRowErrMsg & objSheet(rs.Fields("D2DSK4_更新日").Name) & ":DB更新済み"
+        
+            ' ログ出力
+            If (strRowErrMsg <> "") Then
+                ' エラーログ出力
+                strLog = SHEET_NAME & GetSheetLog(strSheetName) & LINE_NUM & GetRowNoLog(lRowID) & ":" & strRowErrMsg       ' "行番号 n:見出し   (i列):理由"
+                Call mdlLog.OutputLog(strLog, LOGTYPE_ERROR)
+            End If
+
+            rs.MoveNext
+        Loop
+        
+        bOK = bOK And False
+    End If
+    
+    ' オブジェクトのクローズと破棄
+    rs.Close
+    
+    Set rs = Nothing
+    Set rsData = Nothing
+    Set objField = Nothing
+    
+    ' 戻り値の設定
+    CheckD2DSK4UpdData = bOK
+End Function
+
+'/*******************************************************************************************/
+'/* 関数名 : CheckUnregisteredData                                                          */
+'/*-----------------------------------------------------------------------------------------*/
+'/* 引数 : なし                                                                             */
+'/*-----------------------------------------------------------------------------------------*/
+'/* 戻値 : 真 : ErrorLog出力なし                                                            */
+'/*      : 偽 : ErrorLog出力あり                                                            */
+'/*-----------------------------------------------------------------------------------------*/
+'/* 機能 : 未登録                                                                     　    */
+'/*        システム一覧 （プロジェクト名_節目会,プロジェクト名_業務上,システム名）  　      */
+'/*        部品一覧     （プロジェクト名_業務上,システム名,部品名）                         */
+'/*-----------------------------------------------------------------------------------------*/
+'/* 特記 : なし                                                                             */
+'/*******************************************************************************************/
+Private Function CheckUnregisteredData() As Boolean
+    Dim rs As DAO.Recordset
+    Dim strLog As String
+    Dim strSheetName As String              ' シート名
+    Dim bOK As Boolean
+    
+    ' 初期化
+    bOK = True
+    
+    Call mdlDBG.MyDebugPrint("未登録データチェック 開始", DBGPRT_IMPORT_FS)
+    Call mdlLog.OutputLog(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+    Call mdlLog.OutputLog(">>     未登録データチェック 開始     >>")
+    Call mdlLog.OutputLog(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+        
+    ' クエリを実行してレコードセットを開く
+    Set rs = CurrentDb.OpenRecordset("JQ_WT_報告用_ImportBase_ErrRow_未登録", dbOpenDynaset)
+    
+    Do Until rs.EOF
+        bOK = bOK And False
+        
+        strSheetName = rs.Fields("シート名").Value
+        
+        If InStr(strSheetName, "システム一覧") > 0 Then
+        
+            strLog = "未登録データ:%シート名%,%行番号%,%プロジェクト名_節目会%,%プロジェクト名_業務上%,%システム名%"
+        Else
+        
+            strLog = "未登録データ:%シート名%,%行番号%,%プロジェクト名_節目会%,%プロジェクト名_業務上%,%システム名%,%部品名%"
+        End If
+        
+        strLog = Replace(strLog, "%シート名%", rs.Fields("シート名").Name & ":" & (rs.Fields("シート名").Value))
+        strLog = Replace(strLog, "%行番号%", rs.Fields("行番号").Name & ":" & (rs.Fields("行番号").Value))
+        strLog = Replace(strLog, "%プロジェクト名_節目会%", rs.Fields("プロジェクト名_節目会").Name & ":" & rs.Fields("プロジェクト名_節目会").Value)
+        strLog = Replace(strLog, "%プロジェクト名_業務上%", rs.Fields("プロジェクト名_業務上").Name & ":" & rs.Fields("プロジェクト名_業務上").Value)
+        strLog = Replace(strLog, "%システム名%", rs.Fields("システム名").Name & "_JP:" & rs.Fields("システム名").Value)
+        strLog = Replace(strLog, "%部品名%", rs.Fields("部品名").Name & "_JP:" & rs.Fields("部品名").Value)
+        
+        'Debug.Print strLog
+        Call mdlLog.OutputLog(strLog, LOGTYPE_ERROR)
+        rs.MoveNext
+    Loop
+    
+    ' オブジェクトのクローズと破棄
+    rs.Close
+    Set rs = Nothing
+    
+    Call mdlDBG.MyDebugPrint("未登録データチェック 終了", DBGPRT_IMPORT_FS)
+    Call mdlLog.OutputLog("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
+    Call mdlLog.OutputLog("<<     未登録データチェック 終了     <<")
+    Call mdlLog.OutputLog("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
+    
+    Set rs = Nothing
+    
+    ' 戻り値の設定
+    CheckUnregisteredData = bOK
+End Function
+
+'/*******************************************************************************************************/
+'/* 関数名 : ImportCsv                                                                                  */
+'/*-----------------------------------------------------------------------------------------------------*/
+'/* 引数 : ByRef frmProcessing  As Form_F_ProcessingMsg  [I/O] 進捗フォームオブジェクト                 */
+'/*        ByRef strCsvFileName As String                [ /O] インポート結果csvファイル名              */
+'/*-----------------------------------------------------------------------------------------------------*/
+'/* 戻値 : 真 : なし     　　　　　　　　　　　                                                         */
+'/*-----------------------------------------------------------------------------------------------------*/
+'/* 機能 : DT更新、インポート結果情報更新、csvファイル出力                                              */
+'/*-----------------------------------------------------------------------------------------------------*/
+'/* 特記 : なし                                                                                         */
+'/*******************************************************************************************************/
+Public Sub ImportCsv(ByRef frmProcessing As Form_F_ProcessingMsg, ByRef strCsvFileName As String)
+    
+    ' 進捗メッセージの初期化
+    Call frmProcessing.Init("報告用データのインポート", "DTテーブル更新", "更新対象列更新", "", 3)
+    
+    Call mdlDBG.MyDebugPrint("DT_D0D1更新", DBGPRT_IMPORT_FS)
+    
+    ' D0D1更新
+    Call SetWT_RecNo("UPQ_WT_報告用_ImportBase_D0D1重複なし", "D0D1")
+    Call mdlCommonDB.ExecutSQL("UPQ_Update_DT_D0D1_報告用")
+    
+    ' WTインポート結果更新＿D0D1（正常更新レコード）
+    Call mdlCommonDB.ExecutSQL("UPQ_Update_WT_報告用_ImportBase_D0D1_OK")
+    
+    Call frmProcessing.ProgressBarIncrement                                              ' 進捗進行_1/3
+    
+    
+    Call mdlDBG.MyDebugPrint("DT_D2DSK4更新", DBGPRT_IMPORT_FS)
+    
+    ' D2DSK4更新
+    Call SetWT_RecNo("UPQ_WT_報告用_ImportBase_D2DSK4重複なし", "D2DSK4")
+    'VAN CHANGE SQL_QUERY
+    Call mdlCommonDB.ExecutSQL("UPQ_Update_DT_D2DSK4_報告用")
+    
+    Call mdlDBG.MyDebugPrint("インポート結果更新", DBGPRT_IMPORT_FS)
+    
+    ' WTインポート結果更新＿D2DSK4（正常更新レコード）
+    Call mdlCommonDB.ExecutSQL("UPQ_Update_WT_報告用_ImportBase_D2DSK4_OK")
+    
+    Call frmProcessing.ProgressBarIncrement                                              ' 進捗進行_2/3
+    
+    ' WTのD0D1更新結果更新（複数レコード）
+    Call mdlCommonDB.ExecutSQL("UPQ_Update_WT_報告用_ImportBase_D0D1重複")
+    ' WTのD2DSK4更新結果更新（複数レコード）
+    Call mdlCommonDB.ExecutSQL("UPQ_Update_WT_報告用_ImportBase_D2DSK4重複")
+    
+    Call frmProcessing.ProgressBarIncrement                                             ' 進捗進行_3/3
+    
+    ' インポート結果csvファイル出力
+    Call OutputCsv(strCsvFileName)
+    
+    Call frmProcessing.ClearMsgAll
+    
+End Sub
+
+'/***************************************************************************************************/
+'/* 関数名 : SetData_WT_RecNo                                                                       */
+'/*-------------------------------------------------------------------------------------------------*/
+'/* 引数 : ByVal strTable    As String [I/ ] [行番号][xxx_RecNo]の取得元クエリ名                    */
+'/*      : ByVal strTarget   As String [I/ ] RecNoを更新したい[ET_xxx]の"xxx"部分                   */
+'/*-------------------------------------------------------------------------------------------------*/
+'/* 戻値 : なし                                                                                     */
+'/*-------------------------------------------------------------------------------------------------*/
+'/* 機能 : [WT_RecNo]または[WT_RecNo_ErrRow]のクリア&セット                                         */
+'/*      : ① [WT_RecNo]をクリアする                                                                */
+'/*      : ② [WT_RecNo]に[第1引数のテーブルまたはクエリ]から[行番号]と[xxx_RecNo]を抜き出す        */
+'/*-------------------------------------------------------------------------------------------------*/
+'/* 特記 : なし                                                                                     */
+'/***************************************************************************************************/
+Public Sub SetWT_RecNo(ByVal strTable As String, ByVal strTarget As String)
+    Dim strSQLWTIns As String ' ①用SQL文
+    
+    ' ① [WT_RecNo]をクリアする
+    Call mdlCommonDB.ClearTable("WT_RecNo")
+    
+    ' ② [WT_RecNo]に[第1引数のテーブルまたはクエリ]から[行番号]と[xxx_RecNo]を抜き出す
+    ' ～ 備忘メモ (SQL文サンプル) ～～～～～～～～～～～～～～～～～～～～～～～～
+    ' INSERT INTO WT_RecNo ( 行番号, RecNo )
+    ' SELECT IPQ_DT_Index_登録済D0D1.行番号, IPQ_DT_Index_登録済D0D1.D0D1_RecNo
+    ' FROM IPQ_DT_Index_登録済D0D1;
+    ' ～～～～～～～～～～～～～～～～～～～～～～～～～～～～～～～～～～～～～～
+    strSQLWTIns = "INSERT INTO WT_RecNo ( 行番号, RecNo )" _
+              & " SELECT TABLE.番号, TABLE.TARGET_RecNo" _
+              & " FROM TABLE;"
+              
+    
+    strSQLWTIns = Replace(strSQLWTIns, "TABLE", strTable)
+    strSQLWTIns = Replace(strSQLWTIns, "TARGET", strTarget) ' ②のSQL完成
+    Call mdlCommonDB.ExecutSQL(strSQLWTIns)                 ' ②実行
+End Sub
+
+'/*******************************************************************************************************/
+'/* 関数名 : ImportCsv                                                                                  */
+'/*-----------------------------------------------------------------------------------------------------*/
+'/* 引数 : ByRef strCsvFileName As String                [ /O] インポート結果csvファイル名              */
+'/*-----------------------------------------------------------------------------------------------------*/
+'/* 戻値 : 真 : なし     　　　　　　　　　　　                                                         */
+'/*-----------------------------------------------------------------------------------------------------*/
+'/* 機能 : インポート結果csvファイル出力            　　　　                                            */
+'/*-----------------------------------------------------------------------------------------------------*/
+'/* 特記 : なし                                                                                         */
+'/*******************************************************************************************************/
+Public Sub OutputCsv(ByRef strCsvFileName As String)
+    Dim strCsvFilePath As String
+        
+    Call mdlDBG.MyDebugPrint("インポート結果csvファイル出力 開始", DBGPRT_IMPORT_FS)
+    
+    'ファイルパスとcsvファイル名を取得
+    strCsvFilePath = CurrentProject.path & "\Log\"
+    strCsvFileName = "報告用インポート結果_" & Format(Now, "yyyymmddhhnnss") & ".csv"
+    
+    '古いcsvファイル削除
+    Call DeleteResultsCSVFiles(strCsvFilePath)
+    'COPY MOT CAI IMPORT MOI
+    Call DoCmd.TransferText(acExportDelim, , "JQ_WT_報告用_ImportBase", strCsvFilePath & strCsvFileName, True)
+    
+    
+    Call mdlLog.OutputLog(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+    Call mdlLog.OutputLog(">>      報告用インポート結果         >>")
+    Call mdlLog.OutputLog(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+    Call mdlLog.OutputLog("" & strCsvFileName & "を参照してください。")
+
+    Call mdlDBG.MyDebugPrint("インポート結果csvファイル出力 終了", DBGPRT_IMPORT_FS)
+    
+End Sub
+
+'/*******************************************************************************/
+'/* 関数名 : DeleteResultsCSVFiles                                              */
+'/*-----------------------------------------------------------------------------*/
+'/* 引数 : ByVal strPath As String  [I/ ] CSVファイル格納用パス                 */
+'/*-----------------------------------------------------------------------------*/
+'/* 戻値 : なし                                                                 */
+'/*-----------------------------------------------------------------------------*/
+'/* 機能 : Excel 各シートのcsv削除                                              */
+'/*-----------------------------------------------------------------------------*/
+'/* 特記 : なし                                                                 */
+'/*******************************************************************************/
+Private Sub DeleteResultsCSVFiles(ByVal strPath As String)
+    Dim bufFile As String
+    Dim i As Long
+    Dim DataList As Object
+    
+    Set DataList = CreateObject("System.Collections.SortedList")
+    
+    '報告用インポート結果のcsvファイル取得
+    bufFile = Dir(strPath & "報告用インポート結果*.csv")
+    Do While bufFile <> ""
+        Call DataList.Add(bufFile, bufFile)
+        bufFile = Dir()
+    Loop
+    
+    '9ファイル以上存在する場合は、古いファイルを削除する
+    For i = 0 To DataList.count - 10
+        Debug.Print DataList.GetByIndex(i)
+        Call mdlCommonFile.DeleteFile(strPath, DataList.GetByIndex(i))
+    Next i
+    
+    Set DataList = Nothing
+    
+End Sub
+
+'/***************************************************************************************/
+'/* 関数名 : GetSheetLog                                                                */
+'/*-------------------------------------------------------------------------------------*/
+'/* 引数 : ByVal strSheetName As String [I/ ] シート名                                  */
+'/*-------------------------------------------------------------------------------------*/
+'/* 戻値 : Log出力用のシー名にスペースを付け                                            */
+'/*-------------------------------------------------------------------------------------*/
+'/* 機能 : シー名にスペースを付ける文字列を返す                                         */
+'/*-------------------------------------------------------------------------------------*/
+'/* 特記 : なし                                                                         */
+'/***************************************************************************************/
+Public Function GetSheetLog(ByVal strSheetName As String) As String
+    Dim lMaxLengthSheetName As Long ' のシート名で一番長い文字列数
+    Dim strOffsetSpace As String    ' 位置を合わせるための埋め合わせスペース
+    Dim strCol As String            ' 列番号を[A1形式]にしたもの
+    Dim strRet As String
+    
+    ' Log出力時にのシート名の記載位置を揃えるために、
+    ' シート名で一番長い文字列を使用して埋め合わせスペースを作成
+    lMaxLengthSheetName = LenB(StrConv(MAX_LENGTH_SHEET_NAME, vbFromUnicode))
+    strOffsetSpace = Space(lMaxLengthSheetName - LenB(StrConv(strSheetName, vbFromUnicode)))
+    
+    
+    strRet = strSheetName & strOffsetSpace
+                
+    GetSheetLog = strRet
+End Function
+
+'/***************************************************************************************/
+'/* 関数名 : GetRowNoLog                                                                */
+'/*-------------------------------------------------------------------------------------*/
+'/* 引数 : ByVal lRowNo As Long [I/ ] 行番号                                            */
+'/*-------------------------------------------------------------------------------------*/
+'/* 戻値 : Log出力用の行番号にスペースを付け                                            */
+'/*-------------------------------------------------------------------------------------*/
+'/* 機能 : 行番号にスペースを付ける文字列を返す                                         */
+'/*-------------------------------------------------------------------------------------*/
+'/* 特記 : なし                                                                         */
+'/***************************************************************************************/
+Public Function GetRowNoLog(ByVal lRowNo As Long) As String
+    Dim strRet As String
+    
+    strRet = IIf(lRowNo < 10, " " & lRowNo, lRowNo)
+    
+    GetRowNoLog = strRet
+End Function
+'/***************************************************************************************/
+'/* 関数名 : ReleaseExistField                                                          */
+'/*-------------------------------------------------------------------------------------*/
+'/* 引数 : ByVal objExistFieldS As Object [I/ ] [LT_xxx]から[WT_xxx]に取得した列の辞書  */
+'/*-------------------------------------------------------------------------------------*/
+'/* 戻値 : なし                                                                         */
+'/*-------------------------------------------------------------------------------------*/
+'/* 機能 : 辞書内容を削除                                                               */
+'/*-------------------------------------------------------------------------------------*/
+'/* 特記 : なし                                                                         */
+'/***************************************************************************************/
+Private Sub ReleaseExistField(objExistFieldS As Object)
+    Dim vKey As Variant
+    
+    If objExistFieldS Is Nothing Then
+        '処理なし
+    Else
+        For Each vKey In objExistFieldS
+            Call objExistFieldS(vKey).RemoveAll
+            Call objExistFieldS.Remove(vKey)
+        Next vKey
+    End If
+End Sub
+
+'/*******************************************************************************/
+'/* 関数名 : LogOutputEndMsg                                                    */
+'/*-----------------------------------------------------------------------------*/
+'/* 引数 : ByVal bOK            As Boolean  [I/ ] 真 : Error/Warningなし        */
+'/*      :                                        偽 : Error/Warningあり        */
+'/*      : ByVal strCsvName     As String   [ /O] インポート結果csvファイル名   */
+'/*-----------------------------------------------------------------------------*/
+'/* 戻値 : 表示文字列                                                           */
+'/*-----------------------------------------------------------------------------*/
+'/* 機能 : Log出力処理完了時Msg表示                                             */
+'/*-----------------------------------------------------------------------------*/
+'/* 特記 : なし                                                                 */
+'/*******************************************************************************/
+Public Sub LogOutputEndMsg(ByVal bOK As Boolean, ByVal strCsvName As String)
+    Dim strMsg As String
+    Dim vRet As Variant
+    
+    If (bOK = True) Then
+        
+        strMsg = "Import 完了" & vbCrLf & "インポート結果csvファイルが出力されています。" & vbCrLf & "csvファイルを開きますか？"
+        vRet = MsgBox(strMsg, vbYesNo)
+        If vRet = vbYes Then
+            Call OpenCsvFile(strCsvName)
+        End If
+    Else
+        strMsg = "Error/WarningがLog出力されています。" & vbCrLf & "Logファイルを開きますか?"
+        
+        vRet = MsgBox(strMsg, vbYesNo)
+        If vRet = vbYes Then
+            If Not (Nz(strCsvName, "") = "") Then
+                Call OpenCsvFile(strCsvName)
+            End If
+            Call mdlLog.OpenLogFile
+        End If
+    End If
+End Sub
+
+'/*******************************************************************************/
+'/* 関数名 : OpenLogFile                                                        */
+'/*-----------------------------------------------------------------------------*/
+'/* 引数 : ByVal strName     As String   [ /O] csvファイル名                    */
+'/*-----------------------------------------------------------------------------*/
+'/* 戻値 : なし                                                                 */
+'/*-----------------------------------------------------------------------------*/
+'/* 機能 : 報告用インポート結果csvファイル表示                                  */
+'/*-----------------------------------------------------------------------------*/
+'/* 特記 : なし                                                                 */
+'/*******************************************************************************/
+Sub OpenCsvFile(ByVal strName As String)
+    Dim excel As Object
+    Dim book As Object
+    Dim sheet As Object
+    Dim rng As Object
+    Dim tbl As Object
+    Dim target As String
+
+    'CSVのフルパスを作成
+    target = CurrentProject.path & "\Log\" & strName
+    
+    'Excelを開く→CSVを開く→先頭シートを取得→データ範囲を取得
+    Set excel = CreateObject("Excel.Application")
+    Set book = excel.Workbooks.Open(target)
+    Set sheet = book.WorkSheets(1)
+    Set rng = sheet.Usedrange
+    
+    '列を仮に１００文字幅まで広げた後、自動調整する
+    rng.Columns.ColumnWidth = 100
+    Call rng.Columns.autofit
+    
+    '列幅自動調整後に行高さを自動調整する
+    Call rng.rows.autofit
+    
+    'テーブルフォーマットする
+    Set tbl = sheet.ListObjects.Add(xlSrcRange, rng, , xlYes)
+    tbl.TableStyle = "TableStyleMedium13"
+    
+    'Excelを表示する
+    excel.Visible = True
+    
+    Set excel = Nothing
+    Set book = Nothing
+    Set sheet = Nothing
+    Set rng = Nothing
+    Set tbl = Nothing
+End Sub
+
